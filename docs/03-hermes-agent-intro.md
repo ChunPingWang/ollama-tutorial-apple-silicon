@@ -1,16 +1,16 @@
-# 第十八章：Hermes Agent 入門
+# 第三章：Hermes Agent 入門
 
-> 本章在這台機器（Apple M5 Max / 128 GB / macOS 27.2）上實測（原書 Windows 專屬小節與 LM Studio 不在本教材範圍）：Hermes Agent **v0.22.5**（2026.9.24, stable），接本機 Ollama 0.40.13 的 `qwen3.6:35b-a3b-coding-mxfp8`。沒有實測的項目標「未驗證」或「本機略過」。範例與設定檔在 [`examples/ch18/`](../examples/ch18/)。
+> 本章在這台機器（Apple M5 Max / 128 GB / macOS 27.2）上實測（Windows 專屬小節與 LM Studio 不在本教材範圍）：Hermes Agent **v0.22.5**（2026.9.24, stable），接本機 Ollama 0.40.13 的 `qwen3.6:35b-a3b-coding-mxfp8`。沒有實測的項目標「未驗證」或「本機略過」。範例與設定檔在 [`examples/ch03/`](../examples/ch03/)。
 
-## 18-1 Hermes Agent 是什麼
+## 3-1 Hermes Agent 是什麼
 
-### 18-1-1 會累積技能的 Agent
+### 3-1-1 會累積技能的 Agent
 
 Hermes Agent 是 Nous Research 開源（MIT）的 AI agent，官方自稱「The self-improving AI agent」：它在完成多步驟任務後會把可重複的流程寫成 **skill**（`~/.hermes/skills/<name>/SKILL.md`），下次遇到類似任務時自動載入，並在使用中持續修改。有一個背景的 **Curator** 定期整理這些技能（14 天沒用標成 stale、30 天歸檔，可選擇用 LLM 合併重複的技能）。這是它和 Claude Code、Codex CLI 之類 coding agent 最大的差異：後者的技能是人寫的，Hermes 的技能主要是它自己寫的。
 
 其他主要能力：終端機與檔案工具、網頁搜尋、六種終端機後端（local / Docker / SSH / Modal / Daytona / Vercel Sandbox）、排程（cron）、子 Agent（`delegate_task`）、MCP、持久記憶（`MEMORY.md` / `USER.md`）、訊息平台 gateway（Telegram、Discord、Slack、LINE 等近 30 個）。
 
-### 18-1-2 Hermes Agent 與 Hermes 模型
+### 3-1-2 Hermes Agent 與 Hermes 模型
 
 兩個是不同的東西，只是同一家公司取了同一個名字：
 
@@ -22,14 +22,14 @@ Hermes Agent 是 Nous Research 開源（MIT）的 AI agent，官方自稱「The 
 
 本章用的是 Hermes Agent 接本機 Ollama 的 Qwen 模型，完全不用 Hermes 模型。
 
-### 18-1-3 與 OpenClaw、OpenShell 的關係
+### 3-1-3 與 OpenClaw、OpenShell 的關係
 
 - **OpenClaw**：另一個開源個人 agent（原名 Clawdbot / Moltbot）。Hermes 可以匯入它的設定、記憶、技能與 API key：`hermes import-agent openclaw`（舊寫法 `hermes claw migrate`），同一個指令也能匯入 Claude Code、Codex CLI、Cursor 的設定。Ollama 的 `ollama launch` 也同時支援 `hermes` 和 `openclaw`。
-- **OpenShell**：NVIDIA 開源的 agent 沙箱執行環境：用政策宣告 agent 能碰什麼網路和檔案，核心層強制執行，真實憑證不進沙箱。官方支援 Linux、**macOS Apple Silicon**、Windows WSL2（實驗性），需要 Docker / Podman 或主機虛擬化。NVIDIA 的 **NemoClaw** 是在 OpenShell 裡一鍵部署 agent 的工具，預設 agent 是 OpenClaw，`nemohermes` 則是預選 Hermes 的別名；Hermes 的設定會放在沙箱內的 `/sandbox/.hermes`，推論可以路由到本機 Ollama。第十九章 19-6-3 討論。
+- **OpenShell**：NVIDIA 開源的 agent 沙箱執行環境：用政策宣告 agent 能碰什麼網路和檔案，核心層強制執行，真實憑證不進沙箱。官方支援 Linux、**macOS Apple Silicon**、Windows WSL2（實驗性），需要 Docker / Podman 或主機虛擬化。NVIDIA 的 **NemoClaw** 是在 OpenShell 裡一鍵部署 agent 的工具，預設 agent 是 OpenClaw，`nemohermes` 則是預選 Hermes 的別名；Hermes 的設定會放在沙箱內的 `/sandbox/.hermes`，推論可以路由到本機 Ollama。第四章 4-6-3 討論。
 
-## 18-2 安裝
+## 3-2 安裝
 
-### 18-2-1 CLI：install.sh
+### 3-2-1 CLI：install.sh
 
 macOS 的安裝指令：
 
@@ -52,14 +52,14 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 從 Claude Code 的 `!` 前綴執行時沒有 TTY，所以互動的 `hermes setup` 與 `hermes gateway install` 被跳過，要另外跑。已開著的終端機要 `source ~/.zshrc` 或重開才找得到 `hermes`。
 
 
-### 18-2-3 開啟桌面版
+### 3-2-3 開啟桌面版
 
 桌面版（`brew install --cask hermes-desktop`，Hermes-Setup.dmg）已安裝並通過 Gatekeeper 公證檢查（`spctl`：`accepted, source=Notarized Developer ID`）。它是 12 MB 的 bootstrap App，啟動後會下載原始碼並在本機建置 Electron 版；桌面版與 CLI 共用 `~/.hermes` 下的所有設定、sessions、技能、記憶，`hermes desktop` 也能從 CLI 啟動它。**建置與開啟流程待補**（撰寫時 Hermes-Setup 視窗停在等待操作的畫面，無螢幕擷取權限）。
 
 
-## 18-3 Local models 一鍵本機模型
+## 3-3 Local models 一鍵本機模型
 
-### 18-3-1 主要模型
+### 3-3-1 主要模型
 
 Hermes 的 Local models 功能是「由 Hermes 自己下載並管理一個 llama.cpp 伺服器 + GGUF 模型」，和本章接 Ollama 的做法是兩條路：
 
@@ -73,11 +73,11 @@ Hermes 的 Local models 功能是「由 Hermes 自己下載並管理一個 llama
 
 這台機器主力模型是 Ollama 裡的 MLX 格式 Qwen，Local models 的型錄只有 GGUF，所以本章全部走自訂端點。
 
-### 18-3-2 本地模型頁
+### 3-3-2 本地模型頁
 
 **本機略過（GUI）**：桌面版的 Settings → Providers → Local Models 頁。CLI 對應入口是 `hermes model` 選單裡的「Local models」，官方文件說兩者走同一套流程（安裝 runtime → 選模型下載 → Use）。`hermes model` 是互動式選單，無法用腳本驗證型錄內容；本機沒有進去安裝 runtime。
 
-### 18-3-3 推薦模型與記憶體
+### 3-3-3 推薦模型與記憶體
 
 官方文件的規則（未在本機驗證，因為沒安裝代管 runtime）：
 
@@ -86,18 +86,18 @@ Hermes 的 Local models 功能是「由 Hermes 自己下載並管理一個 llama
 - 每個推薦模型至少給 **64K context**；放不下時先把 MoE 專家權重溢出到系統 RAM，「絕不溢出 attention cache」。
 - 文件的經驗值：8 GB GPU 跑小模型、16 GB 以上跑 27–35B。這台 128 GB 的機器在這個尺度上沒有限制。
 
-### 18-3-4 代管伺服器與 DFlash
+### 3-3-4 代管伺服器與 DFlash
 
 - **代管伺服器**：`config.yaml` 的 `local_runtime` 區塊控制（`enabled`、`backend: auto|metal|cuda|vulkan|cpu`、`detect_ports`）。Hermes 會自動偵測已在跑的 llama-server（預設探 8080），有就直接用、不另起。
-- **DFlash**：官方 Local models 文件沒有出現這個詞，只提到 speculative-decoding companions 與 MTP（multi-token prediction）會算進記憶體估算。**未驗證**，原書此節應是 Windows / CUDA 版 llama.cpp 的功能。
+- **DFlash**：官方 Local models 文件沒有出現這個詞，只提到 speculative-decoding companions 與 MTP（multi-token prediction）會算進記憶體估算。**未驗證**，參考資料此節應是 Windows / CUDA 版 llama.cpp 的功能。
 
-### 18-3-5 128GB 實測機上的本地模型頁
+### 3-3-5 128GB 實測機上的本地模型頁
 
-**本機略過（GUI）**。這台機器上對應的事實是 Ollama 這一側的：`ollama ps` 顯示 qwen3.6 以 256K context 全部在 GPU 上，Hermes 連上後自動讀到 262,144 的 context（18-7-2）。
+**本機略過（GUI）**。這台機器上對應的事實是 Ollama 這一側的：`ollama ps` 顯示 qwen3.6 以 256K context 全部在 GPU 上，Hermes 連上後自動讀到 262,144 的 context（3-7-2）。
 
-## 18-4 接上自己的推論伺服器
+## 3-4 接上自己的推論伺服器
 
-### 18-4-1 自訂端點接 Ollama
+### 3-4-1 自訂端點接 Ollama
 
 Ollama 的 OpenAI 相容端點是 `http://localhost:11434/v1`。兩種設法都實測過：
 
@@ -130,16 +130,16 @@ hermes status
 Hermes 會辨識出對方是 Ollama：用本機記錄代理攔截到它在第一次對話前依序呼叫了 `/api/tags`、`/api/show`（讀 `thinking`、template、parameters）、`/v1/models`，然後對 `/v1/chat/completions` 多送一個 Ollama 專用欄位 `"options": {"num_ctx": 262144}`，確保 Ollama 用模型的完整 context。
 
 
-## 18-5 第一個 Agent 任務
+## 3-5 第一個 Agent 任務
 
-### 18-5-1 在桌面版下達任務
+### 3-5-1 在桌面版下達任務
 
 **本機略過（GUI）**。CLI 的對應是 `hermes`（互動）或一次性查詢：
 
 ```sh
 $ hermes chat --oneshot -Q --reasoning none \
     -q "用 terminal 工具執行 ls examples，列出有哪些資料夾，然後用一句話回答。"
-examples 資料夾下有三個子資料夾：ch05、ch16、ch18。
+examples 資料夾下有三個子資料夾：ch01、ch02、ch03。
 ```
 
 6 秒完成（含模型呼叫兩次：第一次回 `tool_calls`，執行 `ls` 後第二次回答）。代理攔到的兩個請求：
@@ -151,7 +151,7 @@ examples 資料夾下有三個子資料夾：ch05、ch16、ch18。
 
 Hermes 的 system prompt 約 13 KB、20 個工具的 schema 約 40 KB，所以每一輪都是 13K tokens 起跳；Ollama 的 prompt cache 讓第二次起幾乎不用重算（`cached_tokens: 12983`）。
 
-### 18-5-2 核准卡片
+### 3-5-2 核准卡片
 
 **本機略過（GUI）**。CLI 版的核准是終端機提示，選 `once` / `session` / `always`（寫進 `command_allowlist`）/ `deny`（預設）。哪些指令會觸發，可以不用模型直接測：
 
@@ -170,21 +170,21 @@ $ hermes approvals test "ls -la"
 verdict : allow  (exit 0)
 ```
 
-### 18-5-3 安全性設定
+### 3-5-3 安全性設定
 
 本機預設值（`hermes config get`）：
 
 | 鍵 | 值 | 意義 |
 |---|---|---|
 | `approvals.mode` | `smart` | 由輔助模型判斷風險：低風險自動放行、危險的擋、不確定的才問 |
-| `approvals.single_query_mode` | `deny` | `hermes chat -q` 一次性模式沒人能按核准，直接拒絕（18-7-3） |
+| `approvals.single_query_mode` | `deny` | `hermes chat -q` 一次性模式沒人能按核准，直接拒絕（3-7-3） |
 | `approvals.cron_mode` / `unattended_mode` | `deny` | 排程與 webhook 同理 |
 | `approvals.timeout` | 300 秒 | 沒回應視為拒絕 |
-| `terminal.backend` | `local` | 直接在這台 Mac 執行（19-6-2 換成 Docker） |
+| `terminal.backend` | `local` | 直接在這台 Mac 執行（4-6-2 換成 Docker） |
 
 其他模式：`manual`（每個危險指令都問）、`off`（等同 `--yolo`，只剩 hardline blocklist）。
 
-### 18-5-4 工具集
+### 3-5-4 工具集
 
 `hermes prompt-size` 列出本機 CLI 預設啟用的 20 個工具與大小：
 
@@ -206,11 +206,11 @@ tts                 1   1,518 B
 
 啟用 / 停用：`hermes tools list`、`hermes tools disable <toolset>`、`hermes tools enable <toolset>`；單次：`hermes chat --toolsets "terminal,file"`。工具數超過門檻時 Hermes 會自動改用 `tool_search`（本機 log：「17 core/visible tools kept, 5 deferred」），模型先搜工具再呼叫，減少 schema 佔的 tokens。
 
-## 18-6 終端機的檢查與設定
+## 3-6 終端機的檢查與設定
 
 
 
-### 18-6-3 hermes doctor 與資料目錄
+### 3-6-3 hermes doctor 與資料目錄
 
 ```sh
 $ hermes --version
@@ -242,13 +242,13 @@ $ hermes doctor
 | `tools/`、`installs/` | 固定版本的 uv、Python、Node 執行環境 |
 | `SOUL.md` | agent 人格設定 |
 
-### 18-6-4 使用資料的詢問
+### 3-6-4 使用資料的詢問
 
 安裝腳本在 `--non-interactive`（或無 TTY）模式下不會問任何問題；本機沒有看到使用量回報的詢問。安裝腳本原始碼裡有 `telemetry/shared_metrics/pending_installs` 的紀錄目錄，`hermes security` 可以稽核相依套件（本機結果：`pyasn1 0.6.4` 有 4 個 HIGH 的 DoS 弱點，0.6.5 已修，`hermes update` 之後重跑確認）。安裝後 `hermes doctor` 的 Security Advisories 為「No active security advisories」。
 
-## 18-7 自訂端點的排錯
+## 3-7 自訂端點的排錯
 
-### 18-7-1 用終端機指定端點
+### 3-7-1 用終端機指定端點
 
 排錯時用一次性模式，所有選項都放命令列、不改設定檔：
 
@@ -263,7 +263,7 @@ hermes chat --oneshot -Q -q "回答一句話：1+1 等於幾？不要用工具�
 elapsed 7s
 ```
 
-看 Hermes 實際送了什麼最快的方法是在中間放一個記錄代理（本章用約 70 行的 Python 腳本 [`examples/ch18/logproxy.py`](../examples/ch18/logproxy.py)，監聽 11435 轉到 11434，把每個請求的欄位與回應摘要寫成一行 JSON），再把 `--base-url` 指到 `http://127.0.0.1:11435/v1`。攔到的第一個對話請求：
+看 Hermes 實際送了什麼最快的方法是在中間放一個記錄代理（本章用約 70 行的 Python 腳本 [`examples/ch03/logproxy.py`](../examples/ch03/logproxy.py)，監聽 11435 轉到 11434，把每個請求的欄位與回應摘要寫成一行 JSON），再把 `--base-url` 指到 `http://127.0.0.1:11435/v1`。攔到的第一個對話請求：
 
 ```json
 {"path": "/v1/chat/completions", "stream": true, "reasoning_effort": "none",
@@ -272,9 +272,9 @@ elapsed 7s
  "usage": {"prompt_tokens": 12983, "completion_tokens": 5}, "secs": 2.8}
 ```
 
-`--reasoning none` 確實變成 `reasoning_effort: "none"`，這正是 Ollama OpenAI 相容端點關掉 Qwen 思考的方式（第五章 5-3-2）。不加的話預設是 `medium`，模型會先思考再呼叫工具，實測仍正確（18-8-1）。
+`--reasoning none` 確實變成 `reasoning_effort: "none"`，這正是 Ollama OpenAI 相容端點關掉 Qwen 思考的方式（第一章 1-3-2）。不加的話預設是 `medium`，模型會先思考再呼叫工具，實測仍正確（3-8-1）。
 
-### 18-7-2 64K context 的下限
+### 3-7-2 64K context 的下限
 
 Hermes 硬性要求模型 context ≥ 64,000。用 32K 的模型會在建立 agent 時直接失敗（CLI 只顯示「Something went wrong」，原因在 `~/.hermes/logs/gateway.log`）：
 
@@ -290,9 +290,9 @@ window.  Start it with at least 64K context (llama.cpp: -c 64000; vLLM: --max-mo
 Ollama: OLLAMA_CONTEXT_LENGTH=64000 or a Modelfile num_ctx), or set model.ollama_num_ctx in config.yaml
 ```
 
-Hermes 讀的是 Ollama `/api/show` 回的 context length。qwen3.6 是 262,144 直接過關；GGUF 模型在 Ollama 的 llama.cpp runner 預設 32,768，要用就得用第五章 5-4-1 的方法調高（Modelfile `num_ctx 65536`，或 `model.ollama_num_ctx: 65536`）。64K 下限的原因：13K tokens 的 system prompt + 工具 schema，再加工具輸出與多輪對話，32K 很快就滿。
+Hermes 讀的是 Ollama `/api/show` 回的 context length。qwen3.6 是 262,144 直接過關；GGUF 模型在 Ollama 的 llama.cpp runner 預設 32,768，要用就得用第一章 1-4-1 的方法調高（Modelfile `num_ctx 65536`，或 `model.ollama_num_ctx: 65536`）。64K 下限的原因：13K tokens 的 system prompt + 工具 schema，再加工具輸出與多輪對話，32K 很快就滿。
 
-### 18-7-3 --oneshot 擋下的指令
+### 3-7-3 --oneshot 擋下的指令
 
 一次性模式沒有人能按核准，`approvals.single_query_mode: deny` 會把所有需要核准的指令直接拒絕，模型會收到拒絕訊息並轉述：
 
@@ -309,7 +309,7 @@ $ ls -d /tmp/hermes_oneshot_test
 
 值得注意：模型自己提出了用 `find ... -exec rm -rf` 繞過樣式比對的建議。這是 pattern 式核准的本質限制，所以不要在無人看管的模式用 `--yolo` 或 `approvals.mode: off`。
 
-### 18-7-4 三種模型來源的比較
+### 3-7-4 三種模型來源的比較
 
 | 來源 | 設定 | 本機實測 |
 |---|---|---|
@@ -317,18 +317,18 @@ $ ls -d /tmp/hermes_oneshot_test
 | Hermes Local models（代管 llama.cpp） | `hermes model` → Local models | 未安裝（本機模型由 Ollama 統一管理） |
 | 雲端（Nous Portal / OpenRouter / Anthropic…） | `hermes model` 登入或填 key | 未使用；`hermes doctor` 顯示四個雲端供應者都 not logged in，不影響本機端點 |
 
-## 18-8 已知問題
+## 3-8 已知問題
 
-### 18-8-1 tool call 掉進 reasoning
+### 3-8-1 tool call 掉進 reasoning
 
-原書的問題是：思考型模型把工具呼叫寫在 reasoning 內容裡而不是 `tool_calls` 欄位，agent 拿不到。**本機未重現**：預設 `reasoning_effort: medium`（思考開著）時，代理攔到的回應是 `resp_reasoning_chars: 124, resp_toolcall_deltas: 1, finish: tool_calls`，也就是思考內容和工具呼叫分別放在正確欄位。原因是 Ollama 0.40 對 Qwen3.6 用 `renderer/parser qwen3.5`（`ollama show` 可見），由伺服器端把 `<think>` 與工具呼叫解析成結構化欄位，不靠 Hermes 自己剖析文字。
+參考資料提到的問題是：思考型模型把工具呼叫寫在 reasoning 內容裡而不是 `tool_calls` 欄位，agent 拿不到。**本機未重現**：預設 `reasoning_effort: medium`（思考開著）時，代理攔到的回應是 `resp_reasoning_chars: 124, resp_toolcall_deltas: 1, finish: tool_calls`，也就是思考內容和工具呼叫分別放在正確欄位。原因是 Ollama 0.40 對 Qwen3.6 用 `renderer/parser qwen3.5`（`ollama show` 可見），由伺服器端把 `<think>` 與工具呼叫解析成結構化欄位，不靠 Hermes 自己剖析文字。
 
 兩個相關的實際問題：
 
 1. **思考拖慢速度**：預設 medium 會多出數十到數百字的 reasoning，每輪多 1–2 秒；用 Qwen 寫程式建議 `--reasoning none` 或 `hermes config set agent.reasoning_effort none`。
-2. **MLX runner 卡死**（第五章 5-6-3）：第一次 Hermes 查詢撞上 Ollama 的 MLX runner 卡住，花了 7 分 17 秒；runner 被砍掉後同樣的查詢 7 秒。
+2. **MLX runner 卡死**（第一章 1-6-3）：第一次 Hermes 查詢撞上 Ollama 的 MLX runner 卡住，花了 7 分 17 秒；runner 被砍掉後同樣的查詢 7 秒。
 
-### 18-8-2 context 設定不一致
+### 3-8-2 context 設定不一致
 
 Hermes 和 Ollama 各有一套 context 設定，本機觀察到的對應關係：
 
@@ -352,7 +352,7 @@ hermes config set auxiliary.title_generation.model_upgrade_enabled false   # 本
 設完後代理確認每輪只剩 `/api/show` 和一個 `/v1/chat/completions`，沒有 501。
 
 
-## 18-9 本章小結
+## 3-9 本章小結
 
 | 項目 | 結論 |
 |---|---|

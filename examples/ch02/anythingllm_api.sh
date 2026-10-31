@@ -1,5 +1,5 @@
 #!/bin/zsh
-# 16-3-1 用 AnythingLLM 桌面版內建的本機 API（127.0.0.1:3001）設定 Ollama、建 workspace、上傳文件、提問。
+# 2-3-1 用 AnythingLLM 桌面版內建的本機 API（127.0.0.1:3001）設定 Ollama、建 workspace、上傳文件、提問。
 # 單人模式且未設密碼時，/api/* 不需要登入；/api/v1/* 需要 API key。
 set -e
 A=http://127.0.0.1:3001

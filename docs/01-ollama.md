@@ -1,6 +1,6 @@
-# 第五章：Ollama
+# 第一章：Ollama
 
-本章所有指令與輸出都在下面這台電腦上實際執行過（2026-10-31）。沒有驗證到的項目會明確標示「未驗證」。原書 Windows / CUDA 專屬的內容（illegal memory access 等）不在本教材範圍。
+本章所有指令與輸出都在下面這台電腦上實際執行過（2026-10-31）。沒有驗證到的項目會明確標示「未驗證」。Windows / CUDA 專屬的內容（illegal memory access 等）不在本教材範圍。
 
 | 項目 | 規格 |
 |---|---|
@@ -11,13 +11,13 @@
 | Python | 3.15.2（`/opt/homebrew/bin/python3`） |
 | Docker | Docker Desktop 29.9.2 |
 
-範例程式在 [`examples/ch05/`](../examples/ch05/)。
+範例程式在 [`examples/ch01/`](../examples/ch01/)。
 
 ---
 
-## 5-1 安裝 Ollama
+## 1-1 安裝 Ollama
 
-### 5-1-1 Arm64 版與 x64 版
+### 1-1-1 Arm64 版與 x64 版
 
 macOS 上的 Ollama 只有一個 Apple Silicon 原生版本，沒有「選 x64 或 Arm64」的問題。Homebrew 裝在 `/opt/homebrew`，就是 arm64 前綴（Intel Mac 的 Homebrew 在 `/usr/local`），裝出來的 binary 也是 arm64：
 
@@ -52,7 +52,7 @@ $ lsof -nP -iTCP:11434 -sTCP:LISTEN
 ollama  10789 rexwang ... TCP 127.0.0.1:11434 (LISTEN)
 ```
 
-Homebrew 產生的服務設定檔是 `~/Library/LaunchAgents/sh.brew.ollama.plist`，裡面預先帶了兩個環境變數（5-4-2 會談）：
+Homebrew 產生的服務設定檔是 `~/Library/LaunchAgents/sh.brew.ollama.plist`，裡面預先帶了兩個環境變數（1-4-2 會談）：
 
 ```xml
 <key>EnvironmentVariables</key>
@@ -62,7 +62,7 @@ Homebrew 產生的服務設定檔是 `~/Library/LaunchAgents/sh.brew.ollama.plis
 </dict>
 ```
 
-### 5-1-2 確認用到 GPU
+### 1-1-2 確認用到 GPU
 
 三個地方可以確認。
 
@@ -98,7 +98,7 @@ Ollama 0.40 在 Apple Silicon 上有兩種 runner：
 | `mlx` | safetensors 格式（mxfp8、nvfp4、bf16、`-mlx` 標籤） | `qwen3.6:35b-a3b-coding-mxfp8` |
 | `llamacpp` | GGUF 格式（q4_K_M、q8_0 等） | `qwen3-embedding:0.6b`、匯入的 GGUF |
 
-### 5-1-3 模型存放位置
+### 1-1-3 模型存放位置
 
 ```sh
 $ ls ~/.ollama
@@ -113,13 +113,13 @@ $ du -sh ~/.ollama/models
 - `manifests/registry.ollama.ai/library/<模型>/<標籤>`：標籤對應哪些 blob。
 - `ollama create` 產生的衍生模型只多一個 manifest 和一小層參數 blob，不會複製 38 GB 的權重。
 
-改位置：設定 `OLLAMA_MODELS=/Volumes/外接碟/ollama`（設法見 5-3-3）。本機沒有改。
+改位置：設定 `OLLAMA_MODELS=/Volumes/外接碟/ollama`（設法見 1-3-3）。本機沒有改。
 
 ---
 
-## 5-2 下載與執行模型
+## 1-2 下載與執行模型
 
-### 5-2-1 ollama run
+### 1-2-1 ollama run
 
 `ollama run` 會在需要時自動 `pull`。三種用法：
 
@@ -153,7 +153,7 @@ $ ollama run qwen3.6:35b-a3b-coding-mxfp8
 | `/set system <string>` | 設定 system prompt |
 | `/set think` / `/set nothink` | 開關思考模式 |
 | `/set verbose` / `/set quiet` | 顯示 / 隱藏速度統計 |
-| `/set format json` / `/set noformat` | JSON 模式（MLX 模型不支援，見 5-6） |
+| `/set format json` / `/set noformat` | JSON 模式（MLX 模型不支援，見 1-6） |
 | `/show info` `/show parameters` `/show system` `/show template` `/show modelfile` `/show license` | 查看模型資訊 |
 | `/save <name>` / `/load <name>` | 把目前對話（含 system、參數）存成新模型 / 載回 |
 | `/clear` | 清除對話 context |
@@ -165,7 +165,7 @@ $ ollama run qwen3.6:35b-a3b-coding-mxfp8
 
 這台機器的主力模型預設**會思考**（`ollama show` 的 `thinking default: true`），寫程式類問答建議加 `--think=false`，速度快很多；要看推理過程再打開。
 
-### 5-2-2 選擇模型與量化
+### 1-2-2 選擇模型與量化
 
 模型大小 ≈ 參數量 × 每個參數的位元數 / 8，再加 KV cache。同一個模型在 Ollama 庫裡會有很多標籤，差別就在量化格式。以 `qwen3.6` 為例（2026-10-31 從 ollama.com/library/qwen3.6/tags 抓到的實際大小）：
 
@@ -184,8 +184,8 @@ $ ollama run qwen3.6:35b-a3b-coding-mxfp8
 
 1. **先決定 Dense 還是 MoE。** `35b-a3b` 是 MoE：總參數 36B，但每個 token 只啟用約 3B，所以 38 GB 的模型能跑 120 tokens/s。Dense 27B 每個 token 要讀完整 27B 參數，同樣 8-bit 會慢約一半以上（未實測）。
 2. **再決定精度。** 記憶體夠就選 8-bit（mxfp8 / q8_0），和 bf16 幾乎沒差；4-bit 省一半空間但品質會掉一些。
-3. **留空間給 KV cache 和其他程式。** 38 GB 的模型 + 256K context 的快取 + Docker + IDE，在 128 GB 上還很寬裕；84 GB 的模型（5-2-4）就只能單獨跑。
-4. **格式決定 runner。** safetensors 走 MLX（Apple 原生，速度好），GGUF 走 llama.cpp（功能最完整，例如 structured output，見 5-6）。
+3. **留空間給 KV cache 和其他程式。** 38 GB 的模型 + 256K context 的快取 + Docker + IDE，在 128 GB 上還很寬裕；84 GB 的模型（1-2-4）就只能單獨跑。
+4. **格式決定 runner。** safetensors 走 MLX（Apple 原生，速度好），GGUF 走 llama.cpp（功能最完整，例如 structured output，見 1-6）。
 
 查一個模型的詳細資訊：
 
@@ -214,7 +214,7 @@ qwen3-embedding:0.6b                            ac6da0dfba84    639 MB
 qwen3.6:35b-a3b-coding-mxfp8                    47f49b2845d7    38 GB
 ```
 
-### 5-2-3 同時載入多個模型
+### 1-2-3 同時載入多個模型
 
 Ollama 預設允許多個模型同時在記憶體裡（`OLLAMA_MAX_LOADED_MODELS` 預設 0 = 自動，單 GPU 為 3 個），記憶體不夠時才會把最久沒用的卸載。實測三個模型同時在 GPU 上：
 
@@ -229,11 +229,11 @@ coder:latest                                    38 GB     100% GPU     32768    
 兩個要點：
 
 - 每個模型是**獨立的 runner 子行程**（`ollama runner --model ...` 或 `llama-server`），MLX 和 llama.cpp 可以混用。
-- `coder` 是用 Modelfile 從 `qwen3.6` 衍生的（5-5-1）。磁碟上共用權重，**但載入記憶體時是兩份**，上面就吃了 77 GB。衍生模型和原模型不要同時用。
+- `coder` 是用 Modelfile 從 `qwen3.6` 衍生的（1-5-1）。磁碟上共用權重，**但載入記憶體時是兩份**，上面就吃了 77 GB。衍生模型和原模型不要同時用。
 
 同一個模型的平行請求數由 `OLLAMA_NUM_PARALLEL` 控制（本機 log 顯示預設 1）。
 
-### 5-2-4 執行 Nemotron 3.5 Super VL
+### 1-2-4 執行 Nemotron 3.5 Super VL
 
 Ollama 庫的名稱是 `nemotron-3.5-super`（沒有 `-vl` 後綴，但 manifest 含 1.61 GiB 的 vision projector，就是 VL 版）。從 registry manifest 查到的實際大小：
 
@@ -251,11 +251,11 @@ ollama pull nemotron-3.5-super
 
 ---
 
-## 5-3 API
+## 1-3 API
 
 服務只聽 `127.0.0.1:11434`。所有端點都不需要認證。
 
-### 5-3-1 原生 API
+### 1-3-1 原生 API
 
 | 端點 | 用途 |
 |---|---|
@@ -268,7 +268,7 @@ ollama pull nemotron-3.5-super
 | `POST /api/show` | 模型資訊 |
 | `POST /api/pull` `/api/create` `/api/copy` `DELETE /api/delete` | 模型管理 |
 
-**generate**（[`01_api_generate.sh`](../examples/ch05/01_api_generate.sh) 實際輸出）：
+**generate**（[`01_api_generate.sh`](../examples/ch01/01_api_generate.sh) 實際輸出）：
 
 ```sh
 curl -s http://localhost:11434/api/generate -d '{
@@ -283,7 +283,7 @@ MoE（混合專家模型）是一種通過「門控機制」在推理時動態�
 
 回應裡的 `eval_count / eval_duration`（奈秒）就是生成速度。`stream` 預設 `true`，每個 token 一行 JSON。
 
-**chat**（[`02_api_chat.sh`](../examples/ch05/02_api_chat.sh)）：對話歷史由呼叫端自己放在 `messages` 陣列裡。
+**chat**（[`02_api_chat.sh`](../examples/ch01/02_api_chat.sh)）：對話歷史由呼叫端自己放在 `messages` 陣列裡。
 
 ```
 $ ./02_api_chat.sh
@@ -292,7 +292,7 @@ $ ./02_api_chat.sh
 
 **思考模式**：`"think": false` 關閉，`true` 開啟；支援等級的模型可給 `"low"/"medium"/"high"`。開著的時候回應多一個 `thinking` 欄位。
 
-**工具呼叫**：`tools` 用 OpenAI 的 function schema，模型回 `message.tool_calls`，執行後以 `{"role":"tool","tool_name":...,"content":...}` 回傳。完整的 Agent 迴圈在 [`04_tools_agent.py`](../examples/ch05/04_tools_agent.py)，實測一次問三件事，模型連續呼叫三個工具後整合回答：
+**工具呼叫**：`tools` 用 OpenAI 的 function schema，模型回 `message.tool_calls`，執行後以 `{"role":"tool","tool_name":...,"content":...}` 回傳。完整的 Agent 迴圈在 [`04_tools_agent.py`](../examples/ch01/04_tools_agent.py)，實測一次問三件事，模型連續呼叫三個工具後整合回答：
 
 ```
 $ python 04_tools_agent.py "現在幾點？順便算一下 2 的 20 次方，然後列出目前資料夾的檔案"
@@ -304,7 +304,7 @@ $ python 04_tools_agent.py "現在幾點？順便算一下 2 的 20 次方，然
 目前資料夾內的檔案與子資料夾包括：...
 ```
 
-**圖片**：`messages[].images` 放檔案路徑或 base64（[`07_vision.py`](../examples/ch05/07_vision.py)，程式自己產生一張紅底藍方塊的 PNG）：
+**圖片**：`messages[].images` 放檔案路徑或 base64（[`07_vision.py`](../examples/ch01/07_vision.py)，程式自己產生一張紅底藍方塊的 PNG）：
 
 ```
 這是一個藍色的正方形，位於紅色的背景中央。
@@ -317,9 +317,9 @@ $ curl -s localhost:11434/api/embed -d '{"model":"qwen3-embedding:0.6b","input":
 → 2 個向量，每個 1024 維
 ```
 
-**結構化輸出（`format`）**：本機主力模型**不支援**，見 5-6-1。
+**結構化輸出（`format`）**：本機主力模型**不支援**，見 1-6-1。
 
-### 5-3-2 OpenAI 相容端點
+### 1-3-2 OpenAI 相容端點
 
 `http://localhost:11434/v1`，`api_key` 隨便填。實測可用：`/v1/models`、`/v1/chat/completions`（含 stream、tools）。
 
@@ -341,7 +341,7 @@ $ curl -s localhost:11434/v1/models | python3 -m json.tool
 "message": {"role": "assistant", "content": "Hi, how are you?"}, "finish_reason": "stop"
 ```
 
-Python 用官方 `openai` 套件（[`05_openai_compat.py`](../examples/ch05/05_openai_compat.py)，實際輸出）：
+Python 用官方 `openai` 套件（[`05_openai_compat.py`](../examples/ch01/05_openai_compat.py)，實際輸出）：
 
 ```python
 client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
@@ -354,7 +354,7 @@ Apple Silicon 採用統一記憶體架構，讓處理器核心的 CPU、GPU 及�
 get_weather {"city":"高雄"}
 ```
 
-### 5-3-3 開放給區域網路
+### 1-3-3 開放給區域網路
 
 預設只聽 `127.0.0.1`。要讓同網段的其他機器（或 Docker 以外的裝置）連進來，把 `OLLAMA_HOST` 設成 `0.0.0.0`。
 
@@ -374,11 +374,11 @@ curl http://<區網IP>:11434/api/version  # 從另一台機器測
 
 > **狀態：未驗證。** 本章撰寫時背景正在下載 Nemotron，重啟服務會中斷下載，所以還沒實測。驗證後會補上實際輸出。
 
-Docker 容器要連主機的 Ollama **不用**開放區網：用 `http://host.docker.internal:11434` 即可（第十六章 Open WebUI 的做法）。
+Docker 容器要連主機的 Ollama **不用**開放區網：用 `http://host.docker.internal:11434` 即可（第二章 Open WebUI 的做法）。
 
 ---
 
-## 5-4 調整設定
+## 1-4 調整設定
 
 所有伺服器端設定都是環境變數（完整清單：`ollama serve --help`；每個參數的意義、調整建議與採樣參數整理在[附錄 A](A1-model-tuning.md)）。本機 Homebrew 服務目前生效的設定可以從 log 的 `server config` 行看到：
 
@@ -387,7 +387,7 @@ OLLAMA_CONTEXT_LENGTH:0  OLLAMA_FLASH_ATTENTION:true  OLLAMA_KV_CACHE_TYPE:q8_0 
 OLLAMA_MAX_LOADED_MODELS:0  OLLAMA_NUM_PARALLEL:1  OLLAMA_MAX_QUEUE:512  OLLAMA_MODELS:/Users/rexwang/.ollama/models
 ```
 
-### 5-4-1 context 長度
+### 1-4-1 context 長度
 
 四個層級，後者覆蓋前者：
 
@@ -405,18 +405,18 @@ NAME                                            SIZE      PROCESSOR    CONTEXT  
 hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M    391 MB    100% GPU     8192       llamacpp
 ```
 
-GGUF 模型的 CONTEXT 預設是 32768（llama.cpp runner 的上限邏輯），MLX 模型直接用模型原生的 262144。要給 Agent 工具用時至少 64K（第十八章 Hermes 的要求），本機主力模型原生就是 256K，不用調。
+GGUF 模型的 CONTEXT 預設是 32768（llama.cpp runner 的上限邏輯），MLX 模型直接用模型原生的 262144。要給 Agent 工具用時至少 64K（第三章 Hermes 的要求），本機主力模型原生就是 256K，不用調。
 
-### 5-4-2 flash attention 與 KV 量化
+### 1-4-2 flash attention 與 KV 量化
 
-Homebrew 的 formula 已經替服務設好 `OLLAMA_FLASH_ATTENTION=1` 和 `OLLAMA_KV_CACHE_TYPE=q8_0`（5-1-1 的 plist），伺服器 log 也確認生效。意義：
+Homebrew 的 formula 已經替服務設好 `OLLAMA_FLASH_ATTENTION=1` 和 `OLLAMA_KV_CACHE_TYPE=q8_0`（1-1-1 的 plist），伺服器 log 也確認生效。意義：
 
 - **flash attention**：注意力計算更省記憶體、長 context 更快。
 - **KV cache q8_0**：把 KV cache 從 f16 壓成 8-bit，長 context 時快取記憶體約減半，品質幾乎不變。選項：`f16`（預設）、`q8_0`、`q4_0`。
 
 這兩個變數作用在 llama.cpp runner（GGUF 模型）。MLX runner 是否採用同一組設定，Ollama 文件沒有說明，本機也沒有辦法從 log 區分，**此點未驗證**。從 `ollama ps` 看，qwen3.6（MLX）載入 256K context 時 SIZE 為 38–40 GB，和檔案大小差不多，表示 KV cache 的初始配置很小、是按需成長的。
 
-### 5-4-3 常駐與釋放
+### 1-4-3 常駐與釋放
 
 模型用完預設 **5 分鐘**後卸載（`OLLAMA_KEEP_ALIVE=5m`）。三種改法都實測過：
 
@@ -438,17 +438,17 @@ ollama run <model> --keepalive 1h "hi"     # UNTIL 變成 59 minutes from now
 ollama stop <model>
 ```
 
-伺服器層級：`OLLAMA_KEEP_ALIVE=-1` 讓所有模型常駐（設法同 5-3-3，重啟服務後生效）。
+伺服器層級：`OLLAMA_KEEP_ALIVE=-1` 讓所有模型常駐（設法同 1-3-3，重啟服務後生效）。
 
 建議：主力模型載入要 4.6 秒，日常開發設 `-1` 或 `1h` 省掉每次等待；要跑其他吃記憶體的工作時用 `ollama stop` 釋放 38 GB。
 
 ---
 
-## 5-5 Modelfile 與匯入
+## 1-5 Modelfile 與匯入
 
-### 5-5-1 Modelfile
+### 1-5-1 Modelfile
 
-[`examples/ch05/Modelfile.coder`](../examples/ch05/Modelfile.coder)：以主力模型為基底，固定 system prompt、較小 context、較低溫度。
+[`examples/ch01/Modelfile.coder`](../examples/ch01/Modelfile.coder)：以主力模型為基底，固定 system prompt、較小 context、較低溫度。
 
 ```dockerfile
 FROM qwen3.6:35b-a3b-coding-mxfp8
@@ -459,7 +459,7 @@ PARAMETER temperature 0.3
 ```
 
 ```sh
-$ ollama create coder -f examples/ch05/Modelfile.coder
+$ ollama create coder -f examples/ch01/Modelfile.coder
 creating new layer sha256:eb4523e5...   # 只多一層幾百 bytes 的參數層
 writing manifest
 success
@@ -476,12 +476,12 @@ $ ollama run coder "寫一個 Python 函式判斷閏年"
 
 1. **思考模式沒有 Modelfile 參數**。`coder` 繼承了「預設思考」，問閏年先吐出一大段 Thinking。要關：`/set nothink`、API `think:false`，或用 `/save` 把開了 `nothink` 的對話存成模型。
 2. `ollama show coder` 的 **Capabilities 區塊是空的**（原模型顯示 completion/vision/tools/thinking），但實測 `/api/chat` 帶 `tools` 給 `coder`，仍正確回傳 `tool_calls`。顯示問題，不影響功能。
-3. 衍生模型載入時是**另一份 38 GB**（5-2-3），用完 `ollama stop coder`。
+3. 衍生模型載入時是**另一份 38 GB**（1-2-3），用完 `ollama stop coder`。
 4. 刪除只刪 manifest：`ollama rm coder`。
 
 其他常用指令：`SYSTEM`、`PARAMETER`、`TEMPLATE`、`ADAPTER`（LoRA）、`MESSAGE`（預置對話）、`LICENSE`。
 
-### 5-5-2 匯入 GGUF
+### 1-5-2 匯入 GGUF
 
 **方式一：直接從 Hugging Face 拉**（實測）。格式 `hf.co/<組織>/<repo>:<量化標籤>`，Ollama 會自己找對應的 .gguf 檔：
 
@@ -517,9 +517,9 @@ $ curl -s localhost:11434/api/chat -d '{"model":"hf.co/Qwen/Qwen2.5-0.5B-Instruc
 
 ---
 
-## 5-6 已知問題
+## 1-6 已知問題
 
-### 5-6-1 structured output is unavailable
+### 1-6-1 structured output is unavailable
 
 這台機器上最常撞到的錯誤：**MLX runner 不支援結構化輸出**。任何帶 `format` 的請求（`"json"` 或 JSON Schema）都會失敗：
 
@@ -538,7 +538,7 @@ Homebrew 的 0.40.13 沒有附 MLX 用的 xgrammar 函式庫。三個做法：
 
 | 做法 | 適用 |
 |---|---|
-| 提示詞要求 JSON + 程式端用 pydantic 驗證、失敗重試（[`06_json_output.py`](../examples/ch05/06_json_output.py)，實測一次就過） | 最通用 |
+| 提示詞要求 JSON + 程式端用 pydantic 驗證、失敗重試（[`06_json_output.py`](../examples/ch01/06_json_output.py)，實測一次就過） | 最通用 |
 | 改用 GGUF 標籤（例如 `qwen3.6:35b-a3b-q8_0`，39 GB），走 llama.cpp runner | 需要嚴格 schema 時 |
 | 用工具呼叫代替：定義一個 function，參數就是你要的 schema，模型回 `tool_calls.arguments` 已是 JSON | Agent 情境 |
 
@@ -547,7 +547,7 @@ $ python 06_json_output.py
 name='Taipei' country='Taiwan' population=2500000
 ```
 
-### 5-6-2 記憶體回報不準
+### 1-6-2 記憶體回報不準
 
 macOS 統一記憶體沒有「專屬 / 共用 GPU 記憶體」的區分，本機實測三個模型同時載入時，`ollama ps` 的 SIZE 與行程的實際 physical footprint 很接近：
 
@@ -570,7 +570,7 @@ footprint -p <runner pid>        # phys_footprint 才是 macOS 真正計帳的�
 3. **`ollama ps` 的 SIZE 單位是 GB（10^9），log 用 GiB（2^30）**，38 GB ≈ 35.7 GiB。
 4. 活動監視器看的是整個系統，Ollama 之外的 GPU 用量（瀏覽器、IDE）也算在 wired 記憶體裡，接近 107.5 GiB 上限時會開始把模型層放到 CPU（`PROCESSOR` 不再是 100% GPU）。
 
-### 5-6-3 MLX runner 卡在 Stopping...（本機實際遇到）
+### 1-6-3 MLX runner 卡在 Stopping...（本機實際遇到）
 
 **現象**：Open WebUI 對 `qwen3.6:35b-a3b-coding-mxfp8` 送出第一個 RAG 請求（思考模式開著、串流）後一直沒有回應；之後所有排隊的請求都被卡住，`ollama ps` 的 `UNTIL` 欄顯示 `Stopping...` 超過 10 分鐘不變，`ollama stop` 也無效。同一時間另一個只做一句話問答的 Hermes Agent 請求花了 7 分 17 秒才回來（正常情況 7 秒）。
 
@@ -588,11 +588,11 @@ kill -9 <runner pid>
 ollama ps                                          # 應該變成空的
 ```
 
-**預防**：對 MLX 模型的長時間串流請求，呼叫端要設合理的 timeout；用 Open WebUI 時把模型的進階參數設成 `"think": false`（第十六章 16-3-2）。這台機器上目前只重現過一次，`ollama serve` 的 log 沒有錯誤訊息。
+**預防**：對 MLX 模型的長時間串流請求，呼叫端要設合理的 timeout；用 Open WebUI 時把模型的進階參數設成 `"think": false`（第二章 2-3-2）。這台機器上目前只重現過一次，`ollama serve` 的 log 沒有錯誤訊息。
 
 ---
 
-## 5-7 本章小結
+## 1-7 本章小結
 
 | 主題 | 這台機器的結論 |
 |---|---|

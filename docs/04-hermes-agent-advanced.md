@@ -1,12 +1,12 @@
-# 第十九章：Hermes Agent 進階
+# 第四章：Hermes Agent 進階
 
-> 延續第十八章的環境：Hermes Agent v0.22.5，模型 `qwen3.6:35b-a3b-coding-mxfp8`（Ollama 0.40.13，`--reasoning none`）。本章每個小節的指令與輸出都在這台 M5 Max 上實際執行；沒做的標「未驗證」或「本機略過」。所有測試都用一次性模式 `hermes chat --oneshot -Q -q "..."`，並透過第十八章的記錄代理觀察模型呼叫次數。
+> 延續第三章的環境：Hermes Agent v0.22.5，模型 `qwen3.6:35b-a3b-coding-mxfp8`（Ollama 0.40.13，`--reasoning none`）。本章每個小節的指令與輸出都在這台 M5 Max 上實際執行；沒做的標「未驗證」或「本機略過」。所有測試都用一次性模式 `hermes chat --oneshot -Q -q "..."`，並透過第三章的記錄代理觀察模型呼叫次數。
 
-## 19-1 技能
+## 4-1 技能
 
-### 19-1-1 技能的格式與位置
+### 4-1-1 技能的格式與位置
 
-技能就是一個資料夾加一個 `SKILL.md`，YAML frontmatter 寫名稱、描述、適用平台與標籤，正文是給模型看的操作說明。本機自動建立的例子（19-1-2）：
+技能就是一個資料夾加一個 `SKILL.md`，YAML frontmatter 寫名稱、描述、適用平台與標籤，正文是給模型看的操作說明。本機自動建立的例子（4-1-2）：
 
 ```markdown
 ---
@@ -49,7 +49,7 @@ $ hermes skills list
 
 技能採「漸進揭露」：system prompt 裡只放技能索引（本機 5.6 KB），模型需要時再用 `skill_view` 讀全文，所以技能多也不會吃光 context。Frontmatter 的 `platforms: [macos]` 讓 Linux 上的 Hermes 看不到 Apple 專用技能。
 
-### 19-1-2 自動建立與 Curator
+### 4-1-2 自動建立與 Curator
 
 **自動建立**：system prompt 要求模型在完成多步驟、可重複的流程後用 `skill_manage` 工具把它存成技能。本機直接要求它建立：
 
@@ -80,7 +80,7 @@ unmanaged (no provenance marker): 1 total
 
 觸發條件是「距上次 ≥ 7 天且 agent 閒置 ≥ 2 小時」，在 CLI 啟動、gateway 例行維護時檢查；新安裝的第一次延後一個週期。手動：`hermes curator run --dry-run`、`hermes curator pin <skill>`（免於整理）、`hermes curator adopt <skill>`（把自建技能納管）。LLM 合併用的模型走 `auxiliary.curator`，預設跟主模型。
 
-### 19-1-3 /learn 與 Skills Hub
+### 4-1-3 /learn 與 Skills Hub
 
 **`/learn`**（**未驗證**：只能在互動 session 使用，一次性模式沒有斜線指令）：`/learn <本機路徑 | URL | 描述的流程>`，讓 agent 讀來源後用 `skill_manage` 存成技能；大型來源（整個文件資料夾）會變成「知識庫型技能」：精簡的 `SKILL.md` 加 `references/` 下的分主題檔。
 
@@ -99,9 +99,9 @@ $ hermes skills check / update / uninstall <name>
 
 來源有 `official`、`skills-sh`、`well-known`、`github`、`clawhub`（OpenClaw 的 hub）、`lobehub`、`browse-sh`；信任等級 `builtin` > `official` > `trusted` > `community`。本機沒有安裝任何 hub 技能。
 
-## 19-2 記憶
+## 4-2 記憶
 
-### 19-2-1 MEMORY.md 與 USER.md
+### 4-2-1 MEMORY.md 與 USER.md
 
 兩個純文字檔，整份注入每個 session 的 system prompt：
 
@@ -128,7 +128,7 @@ $ cat ~/.hermes/memories/MEMORY.md
 - 寫入立刻落盤，但**當前 session 的 system prompt 不會更新**，下一個 session 才看得到。
 - 要先審核：`hermes config set memory.write_approval true`，之後 `/memory pending`、`/memory approve <id>`。
 
-### 19-2-2 session 搜尋
+### 4-2-2 session 搜尋
 
 所有對話（CLI 與訊息平台）存在 `~/.hermes/state.db`（SQLite + FTS5 全文索引），模型可用 `session_search` 工具查過去的對話。新開一個 session 問它：
 
@@ -145,7 +145,7 @@ elapsed 5s
 
 代理顯示它呼叫了兩次工具（搜尋、再讀該 session 內容）。CLI 端對應的是 `hermes sessions list`、`hermes --resume <id>`。
 
-### 19-2-3 外部記憶後端
+### 4-2-3 外部記憶後端
 
 ```sh
 $ hermes memory status
@@ -158,9 +158,9 @@ $ hermes memory status
 
 內建記憶永遠開著；外部後端是**附加**的向量/圖記憶（RetainDB、ByteRover 隨附；Honcho、Mem0、Supermemory 等用 `hermes plugins install <name>`），用 `hermes memory setup` 啟用、一次只能一個。本機沒有啟用任何外部後端（**未驗證**）；兩個隨附插件都已列在 macOS Apple Silicon 的可用清單。
 
-## 19-3 排程
+## 4-3 排程
 
-### 19-3-1 建立排程工作
+### 4-3-1 建立排程工作
 
 ```sh
 $ hermes cron create "every 6h" "檢查 ollama ps 有哪些模型載入，用一句話回報" --name ollama-check --deliver local
@@ -196,12 +196,12 @@ $ cat ~/.hermes/cron/output/902fceca1331/2026-10-31_17-13-05.md
 
 兩個要點：
 
-1. **排程由 gateway 執行**（每 60 秒 tick 一次）。CLI 對話時 Hermes 會自動起一個 `gateway run --idle-exit` 行程（`hermes gateway status` 顯示 `Running manually, not as a system service`），但要在沒開終端機時也準時執行，必須把 gateway 裝成服務（19-5-4）。
+1. **排程由 gateway 執行**（每 60 秒 tick 一次）。CLI 對話時 Hermes 會自動起一個 `gateway run --idle-exit` 行程（`hermes gateway status` 顯示 `Running manually, not as a system service`），但要在沒開終端機時也準時執行，必須把 gateway 裝成服務（4-5-4）。
 2. 排程裡的危險指令預設拒絕（`approvals.cron_mode: deny`），要讓無人看管的工作能執行需核准的指令，設成 `approve` 並確認 prompt 不會碰到危險操作。
 
 管理：`pause` / `resume` / `edit --schedule "every 4h"` / `runs --limit 20` / `remove`。本章結束時已 `hermes cron remove ollama-check`。
 
-### 19-3-2 排程用哪個模型
+### 4-3-2 排程用哪個模型
 
 觸發當下依序決定：
 
@@ -209,11 +209,11 @@ $ cat ~/.hermes/cron/output/902fceca1331/2026-10-31_17-13-05.md
 2. 排程整體預設：`hermes config set cron.model <m>`（本機未設，空字串）。
 3. 都沒有就用主模型（`model.default`）。上面那次執行 `jobs.json` 的 `model` 是 `null`，所以用了 qwen3.6。
 
-對這台機器的建議：排程多半是短任務，可以釘到較小、載入快的模型，避免半夜為了一句話載入 38 GB；但注意 Hermes 的 64K context 下限（18-7-2），模型要先在 Ollama 側設好 `num_ctx`。
+對這台機器的建議：排程多半是短任務，可以釘到較小、載入快的模型，避免半夜為了一句話載入 38 GB；但注意 Hermes 的 64K context 下限（3-7-2），模型要先在 Ollama 側設好 `num_ctx`。
 
-## 19-4 MCP 與子 Agent
+## 4-4 MCP 與子 Agent
 
-### 19-4-1 接上 MCP 伺服器
+### 4-4-1 接上 MCP 伺服器
 
 Hermes 有一個 Nous 審核過的 MCP 型錄，一行安裝；本機裝一個不需帳號的遠端 HTTP 伺服器 DeepWiki（讀 GitHub repo 的文件）：
 
@@ -251,7 +251,7 @@ elapsed 4s
 
 代理顯示工具數從 20 變 21（多了 `tool_search` 可找到的 MCP 工具），兩次工具呼叫後回答。安全面：MCP 子行程只拿到 `PATH`、`HOME`、`USER`、`LANG`、`TERM` 等少數環境變數加伺服器自己 `env` 裡的值，`hermes doctor` 會檢查 stdio 指令是否可疑。
 
-### 19-4-2 delegate_task
+### 4-4-2 delegate_task
 
 模型可以用 `delegate_task` 開子 agent：各自獨立的對話、受限的工具（leaf 子 agent 不能再 delegate、不能寫 memory、不能發訊息），結果回到父 agent。本機強制它平行開兩個：
 
@@ -267,9 +267,9 @@ elapsed 9s
 
 設定：`delegation.max_concurrent_children`（本機預設 **10**）、`delegation.model` / `delegation.provider`（子 agent 用別的模型，例如把子任務丟給較小的模型；未設則跟父）、`delegation.max_spawn_depth`（預設 1，子不能再生孫）。對話中 `/agents`（或 Ctrl+T）看執行中的子 agent，`/stop` 中止。
 
-## 19-5 訊息平台
+## 4-5 訊息平台
 
-### 19-5-1 gateway
+### 4-5-1 gateway
 
 gateway 是一個長駐行程，同時負責：接訊息平台（Telegram、Discord、Slack、LINE、Signal、Email… 近 30 種）、跑排程、處理 webhook。本機狀態：
 
@@ -281,11 +281,11 @@ $ ps -o command= -p 29917
 python3 -m hermes_cli.main --profile default gateway run --quiet --idle-exit
 ```
 
-這個行程是第一次 `hermes chat` 時自動起的（`--idle-exit`：閒置一段時間自己結束）。要長駐見 19-5-4。平台設定走互動精靈 `hermes gateway setup`，或直接寫 `~/.hermes/.env`（token）與 `config.yaml` 的 `gateway.platforms`。本機沒有任何訊息平台的 token，各平台（Telegram、LINE 等）的設定不在本教材範圍，見官方 Messaging 文件。
+這個行程是第一次 `hermes chat` 時自動起的（`--idle-exit`：閒置一段時間自己結束）。要長駐見 4-5-4。平台設定走互動精靈 `hermes gateway setup`，或直接寫 `~/.hermes/.env`（token）與 `config.yaml` 的 `gateway.platforms`。本機沒有任何訊息平台的 token，各平台（Telegram、LINE 等）的設定不在本教材範圍，見官方 Messaging 文件。
 
 
 
-### 19-5-4 開機自動啟動
+### 4-5-4 開機自動啟動
 
 macOS 用 launchd，`hermes gateway install` 會寫一個 LaunchAgent。本機實測（裝完立刻移除，避免留下常駐服務）：
 
@@ -305,11 +305,11 @@ $ hermes gateway uninstall
 ✓ Removed /Users/rexwang/Library/LaunchAgents/ai.hermes.gateway.plist
 ```
 
-要真的常駐：`hermes gateway install`（不加 `--no-start-now`）或之後 `hermes gateway start`；`stop` / `restart` / `status` 管理。plist 有 `KeepAlive`，崩潰會自動重啟。這和第五章 Ollama 的 `brew services` 是同一種機制（`~/Library/LaunchAgents/`）。
+要真的常駐：`hermes gateway install`（不加 `--no-start-now`）或之後 `hermes gateway start`；`stop` / `restart` / `status` 管理。plist 有 `KeepAlive`，崩潰會自動重啟。這和第一章 Ollama 的 `brew services` 是同一種機制（`~/Library/LaunchAgents/`）。
 
-## 19-6 安全
+## 4-6 安全
 
-### 19-6-1 指令核准模式
+### 4-6-1 指令核准模式
 
 本機預設 `approvals.mode: smart`：命中危險樣式的指令先由輔助模型評估風險，低風險放行、高風險擋、不確定才跳提示。可以不跑模型直接測判定：
 
@@ -333,9 +333,9 @@ detail  : matches the hardline blocklist (never bypassable, blocked even under -
 | 危險樣式 | 互動 session 跳提示：`once` / `session` / `always`（寫入 `command_allowlist`）/ `deny`；無人看管模式（`-q`、cron、webhook）預設 `deny` | `approvals.mode: smart|manual|off`、`approvals.single_query_mode`、`approvals.cron_mode`、`approvals.unattended_mode`、`approvals.deny`（自訂 glob 黑名單） |
 | 其他 | 全放行 | `--yolo` / `/yolo` / `HERMES_YOLO_MODE=1`（仍擋 hardline） |
 
-`hermes approvals suggest` 會從過去的核准紀錄建議 `command_allowlist`。第十八章 18-7-3 已示範一次性模式拒絕 `rm -rf`，也看到模型會建議用 `find -exec rm` 繞過樣式比對：樣式比對只能擋明顯的，真正的隔離要靠 19-6-2。
+`hermes approvals suggest` 會從過去的核准紀錄建議 `command_allowlist`。第三章 3-7-3 已示範一次性模式拒絕 `rm -rf`，也看到模型會建議用 `find -exec rm` 繞過樣式比對：樣式比對只能擋明顯的，真正的隔離要靠 4-6-2。
 
-### 19-6-2 terminal backend 與沙箱
+### 4-6-2 terminal backend 與沙箱
 
 `terminal.backend` 決定 agent 的指令在哪裡執行。本機預設 `local`（直接在這台 Mac 跑），切到 `docker` 之後所有 terminal / 檔案 / `execute_code` 呼叫都進同一個長壽容器：
 
@@ -364,7 +364,7 @@ Ignoring TERMINAL_CWD='/Users/rexwang' for docker backend (host/relative path wo
 本機實測踩到的兩點：
 
 1. **第一次切換沒生效。** 改完 `terminal.backend` 直接跑，`uname -a` 回的是 `Darwin`（macOS）：Hermes 的 gateway 行程還在跑舊設定，而且背景正在拉映像檔。`hermes gateway stop`（或 `restart`）之後再跑才進容器。要先 `docker pull nousresearch/hermes-sandbox:desktop` 把 4.38 GB 拉好，不然第一個任務會等很久。
-2. **容器裡的危險指令不會再問。** 官方規則是「容器本身就是邊界」：`docker`、`modal`、`daytona`、`vercel_sandbox`、`singularity` 後端都跳過 19-6-1 的核准檢查。所以 Docker 後端適合讓 agent 自由安裝套件、改檔案，但掛進去的 `~/.hermes/skills` 等目錄是唯讀的；要讓它改專案，用 `terminal.cwd` 指定工作目錄並留意掛載。
+2. **容器裡的危險指令不會再問。** 官方規則是「容器本身就是邊界」：`docker`、`modal`、`daytona`、`vercel_sandbox`、`singularity` 後端都跳過 4-6-1 的核准檢查。所以 Docker 後端適合讓 agent 自由安裝套件、改檔案，但掛進去的 `~/.hermes/skills` 等目錄是唯讀的；要讓它改專案，用 `terminal.cwd` 指定工作目錄並留意掛載。
 
 後端一覽（本機只測了 `local` 與 `docker`）：
 
@@ -377,11 +377,11 @@ Ignoring TERMINAL_CWD='/Users/rexwang' for docker backend (host/relative path wo
 
 資源與持久化：`terminal.container_cpu`（預設 1）、`container_memory`（5120 MB）、`container_disk`（51200 MB）、`container_persistent`（true：容器在 Hermes 行程存活期間保留，裝過的套件不用重裝）。本機 log 有一行 `Cgroup limit probe failed; containers run without CPU/memory/PID limits until a probe succeeds`：Docker Desktop on macOS 的 cgroup 探測失敗，所以 CPU / 記憶體上限暫時沒套用，隔離仍在。測完已改回 `local`，容器用 `docker rm -f hermes-a179476c` 清掉。
 
-### 19-6-3 搭配 OpenShell
+### 4-6-3 搭配 OpenShell
 
-**未驗證（未安裝）。** OpenShell 是 NVIDIA 的 agent 沙箱：用政策檔宣告 agent 能連哪些網域、碰哪些路徑，核心層強制執行，API key 留在沙箱外由 gateway 代注入，政策變更先經形式驗證。官方支援 Linux、**macOS Apple Silicon**、Windows WSL2（實驗性），需要 Docker / Podman。NVIDIA 的 NemoClaw 可以一行把 Hermes 部署進 OpenShell（`nemohermes` 是預選 Hermes 的別名），Hermes 設定在沙箱內 `/sandbox/.hermes`，推論可路由到本機 Ollama。安裝方式是 `curl ... | sh` 腳本；本機因政策不由 Claude Code 執行外部安裝腳本，未安裝。和 19-6-2 的 Docker 後端相比，OpenShell 多了**網路出口政策**與**憑證不進沙箱**兩件事。
+**未驗證（未安裝）。** OpenShell 是 NVIDIA 的 agent 沙箱：用政策檔宣告 agent 能連哪些網域、碰哪些路徑，核心層強制執行，API key 留在沙箱外由 gateway 代注入，政策變更先經形式驗證。官方支援 Linux、**macOS Apple Silicon**、Windows WSL2（實驗性），需要 Docker / Podman。NVIDIA 的 NemoClaw 可以一行把 Hermes 部署進 OpenShell（`nemohermes` 是預選 Hermes 的別名），Hermes 設定在沙箱內 `/sandbox/.hermes`，推論可路由到本機 Ollama。安裝方式是 `curl ... | sh` 腳本；本機因政策不由 Claude Code 執行外部安裝腳本，未安裝。和 4-6-2 的 Docker 後端相比，OpenShell 多了**網路出口政策**與**憑證不進沙箱**兩件事。
 
-## 19-7 本章小結
+## 4-7 本章小結
 
 | 主題 | 本機結論 |
 |---|---|

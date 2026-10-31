@@ -1,11 +1,11 @@
 """
-16-4 自己寫一套：完整 RAG 流程。
+2-4 自己寫一套：完整 RAG 流程。
   切分 (chunk.py) → embedding → sqlite-vec 索引 → 檢索 top-k → [可選 rerank] → 交給 LLM 回答
 
 執行：
   python rag.py "問題"                  用預設模型 qwen3.6 回答
   python rag.py --rerank "問題"         先取 8 塊再用 LLM 重排，取前 3 塊
-  RAG_MODEL=nemotron-3.5-super python rag.py "問題"   換成別的生成模型（16-4-3）
+  RAG_MODEL=nemotron-3.5-super python rag.py "問題"   換成別的生成模型（2-4-3）
 """
 import os
 import re

@@ -4,10 +4,10 @@ __pycache__/
 *.pyc
 
 # RAG 產生的資料
-examples/ch16/*.db
-examples/ch16/*.sqlite
-examples/ch16/qdrant_storage/
-examples/ch16/.cache/
+examples/ch02/*.db
+examples/ch02/*.sqlite
+examples/ch02/qdrant_storage/
+examples/ch02/.cache/
 
 # macOS
 .DS_Store

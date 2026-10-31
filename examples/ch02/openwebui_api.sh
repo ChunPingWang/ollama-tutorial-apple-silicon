@@ -1,5 +1,5 @@
 #!/bin/zsh
-# 16-3-2 用 REST API 操作 Open WebUI 知識庫（本機 Docker，port 3000）。
+# 2-3-2 用 REST API 操作 Open WebUI 知識庫（本機 Docker，port 3000）。
 # 第一次執行會註冊管理員帳號；之後重跑請改用 /api/v1/auths/signin。
 set -e
 B=http://localhost:3000

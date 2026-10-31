@@ -6,11 +6,11 @@
 
 | 層級 | 設在哪裡 | 影響範圍 | 什麼時候改 |
 |---|---|---|---|
-| 1. 伺服器環境變數 `OLLAMA_*` | `launchctl setenv` + `brew services restart ollama`（5-3-3） | 這台機器上所有模型、所有程式 | 記憶體、連接埠、常駐時間等「機器層面」的事 |
-| 2. 模型參數（Modelfile `PARAMETER`） | `ollama create` 建衍生模型（5-5-1） | 這一個模型名稱，所有程式 | 想讓某個模型「預設就是這樣」，例如固定 32K context、固定低溫度 |
+| 1. 伺服器環境變數 `OLLAMA_*` | `launchctl setenv` + `brew services restart ollama`（1-3-3） | 這台機器上所有模型、所有程式 | 記憶體、連接埠、常駐時間等「機器層面」的事 |
+| 2. 模型參數（Modelfile `PARAMETER`） | `ollama create` 建衍生模型（1-5-1） | 這一個模型名稱，所有程式 | 想讓某個模型「預設就是這樣」，例如固定 32K context、固定低溫度 |
 | 3. 單一請求 `options` | REST `/api/*` 的 `options`、Python `ollama.chat(options=...)`、CLI `/set parameter` | 只有這一次請求 | 做實驗、不同任務用不同設定 |
 
-優先順序：**請求 > Modelfile > 模型內建預設 > 伺服器環境變數**。5-4-1 的 context 實驗就是這個順序：伺服器預設 262144，Modelfile 設 32768 就變 32768，單一請求送 8192 就變 8192。
+優先順序：**請求 > Modelfile > 模型內建預設 > 伺服器環境變數**。1-4-1 的 context 實驗就是這個順序：伺服器預設 262144，Modelfile 設 32768 就變 32768，單一請求送 8192 就變 8192。
 
 模型自己也帶一組預設值，用 `ollama show <模型> --parameters` 看。主力模型的內建值：
 
@@ -53,8 +53,8 @@ context 上限反而小的那一個比較吃記憶體，因為 **SIZE 看的是�
 | 預設 | MLX 模型用模型原生值（qwen3.6 = 262144）；GGUF 模型 32768；或由 `OLLAMA_CONTEXT_LENGTH` 統一指定 |
 | 調大 | 能塞更長的文件、更多輪對話、更多工具定義；KV cache 上限變大 |
 | 調小 | 省記憶體、載入快一點；內容超過時會被靜默截斷，Agent 會「忘記」前面的工具結果，這是最常見的奇怪錯誤來源 |
-| 本機建議 | 主力模型維持原生 256K 不用動。給 Hermes 等 Agent 用的模型至少 64K（18-7-2 的硬性下限）。只拿來做短問答或分類的小模型可以設 4096–8192 |
-| 驗證 | 5-4-1 的實驗；本章 A-6 的 `/v1` 測試 |
+| 本機建議 | 主力模型維持原生 256K 不用動。給 Hermes 等 Agent 用的模型至少 64K（3-7-2 的硬性下限）。只拿來做短問答或分類的小模型可以設 4096–8192 |
+| 驗證 | 1-4-1 的實驗；本章 A-6 的 `/v1` 測試 |
 
 實測：同一個小模型 `num_ctx` 4096 時 SIZE 315 MB，8192 時 391 MB，32768 時 602 MB。
 
@@ -68,19 +68,19 @@ context 上限反而小的那一個比較吃記憶體，因為 **SIZE 看的是�
 | 調長 | 省掉每次 4.6 秒（主力模型）到數十秒（Nemotron）的載入時間 |
 | 調短 | 把記憶體還給 Docker、IDE 或另一個模型 |
 | 本機建議 | 日常開發對主力模型設 `-1` 或 `1h`；要跑大模型前先 `ollama stop` 小的 |
-| 驗證 | 5-4-3 三種設法都有輸出 |
+| 驗證 | 1-4-3 三種設法都有輸出 |
 
 ### `OLLAMA_MAX_LOADED_MODELS`、`OLLAMA_NUM_PARALLEL`：同時幾個模型、幾個請求
 
 | | 說明 |
 |---|---|
-| `OLLAMA_MAX_LOADED_MODELS` | 同時留在記憶體的模型數。預設 0 = 自動（單 GPU 為 3）。記憶體不夠時卸載最久沒用的。本機實測三個模型同時在 GPU（5-2-3） |
+| `OLLAMA_MAX_LOADED_MODELS` | 同時留在記憶體的模型數。預設 0 = 自動（單 GPU 為 3）。記憶體不夠時卸載最久沒用的。本機實測三個模型同時在 GPU（1-2-3） |
 | `OLLAMA_NUM_PARALLEL` | 同一個模型同時處理幾個請求。本機預設 1，第二個請求會排隊。調成 2 或 4 時 KV cache 會按倍數預留，每個請求實際可用的 context 也會被均分（Ollama 文件說明，本機未調整） |
 | 本機建議 | 兩者維持預設。本機 107.5 GiB 的 GPU 記憶體裝一個 84 GiB 的 Nemotron 後就裝不下第二個大模型，Ollama 會等忙碌中的模型閒置才卸載它，所以**大模型和忙碌的 Agent 不能同時用**（今天實際發生：Nemotron 的載入請求排隊超過兩小時） |
 
 ### `OLLAMA_FLASH_ATTENTION`、`OLLAMA_KV_CACHE_TYPE`：長 context 的記憶體
 
-Homebrew 已經替服務設好 `OLLAMA_FLASH_ATTENTION=1`、`OLLAMA_KV_CACHE_TYPE=q8_0`（5-4-2），不需要再改。KV cache 可選 `f16`（最精確）、`q8_0`（約省一半，品質幾乎不變）、`q4_0`（再省一半，長文件任務品質會掉）。要改回 f16 只有在懷疑長 context 回答品質變差時才需要。這組設定作用在 llama.cpp runner，MLX runner 是否採用**未驗證**。
+Homebrew 已經替服務設好 `OLLAMA_FLASH_ATTENTION=1`、`OLLAMA_KV_CACHE_TYPE=q8_0`（1-4-2），不需要再改。KV cache 可選 `f16`（最精確）、`q8_0`（約省一半，品質幾乎不變）、`q4_0`（再省一半，長文件任務品質會掉）。要改回 f16 只有在懷疑長 context 回答品質變差時才需要。這組設定作用在 llama.cpp runner，MLX runner 是否採用**未驗證**。
 
 ### `num_predict`：最多回答幾個 token
 
@@ -88,7 +88,7 @@ Homebrew 已經替服務設好 `OLLAMA_FLASH_ATTENTION=1`、`OLLAMA_KV_CACHE_TYP
 |---|---|
 | 是什麼 | 回答的 token 上限。`/v1` 端點叫 `max_tokens` |
 | 預設 | -1 = 不限制（直到模型自己停或 context 滿） |
-| 用途 | 防止模型講不停、控制回應時間；RAG 的 rerank 只要回「是 / 否」時設成 4（16-3 的 `rag.py`） |
+| 用途 | 防止模型講不停、控制回應時間；RAG 的 rerank 只要回「是 / 否」時設成 4（2-3 的 `rag.py`） |
 | 驗證 | 下面的輸出 |
 
 ```sh
@@ -101,7 +101,7 @@ response: 'Python 作為一種超級簡易'   done_reason: length   eval_count: 
 
 ### 量化標籤：載入前就決定的大小與速度
 
-這不是執行期參數，但它是最大的「調優」：同一個模型選 4-bit 標籤只要一半記憶體，8-bit 品質接近原始。選法見 5-2-2。經驗法則：
+這不是執行期參數，但它是最大的「調優」：同一個模型選 4-bit 標籤只要一半記憶體，8-bit 品質接近原始。選法見 1-2-2。經驗法則：
 
 1. 記憶體夠就用 8-bit（`mxfp8` / `q8_0`）。
 2. MoE（`a3b`）比同大小的 Dense 快很多，因為每個 token 只算一小部分參數。
@@ -195,7 +195,7 @@ response: '1. Python 是一種流行的高级編程語言，創立於20世纪70�
 
 ### `think`：要不要先推理
 
-這不是 `options`，是請求的最上層欄位（5-3-1）。
+這不是 `options`，是請求的最上層欄位（1-3-1）。
 
 | 值 | 意思 |
 |---|---|
@@ -209,7 +209,7 @@ qwen3.6:35b-a3b-coding-mxfp8   thinking levels: false, true          default tru
 nemotron-3.5-super             thinking levels: false, true, medium  default true
 ```
 
-所以 qwen3.6 只能開關，`--think high` 沒有作用；Nemotron 多一個 `medium`。CLI 用 `ollama run <模型> --think=false`，`/v1` 端點要用 `reasoning_effort: "none"`（5-3-2）。Modelfile 無法關思考（5-5-1），要固定關閉只能在程式裡每次送。
+所以 qwen3.6 只能開關，`--think high` 沒有作用；Nemotron 多一個 `medium`。CLI 用 `ollama run <模型> --think=false`，`/v1` 端點要用 `reasoning_effort: "none"`（1-3-2）。Modelfile 無法關思考（1-5-1），要固定關閉只能在程式裡每次送。
 
 ### 常見任務的建議組合
 
@@ -225,12 +225,12 @@ nemotron-3.5-super             thinking levels: false, true, medium  default tru
 
 ## A-5 伺服器環境變數總表
 
-`ollama serve --help` 列出的全部變數，加上本機目前的值（取自伺服器 log 的 `server config` 行，5-4）：
+`ollama serve --help` 列出的全部變數，加上本機目前的值（取自伺服器 log 的 `server config` 行，1-4）：
 
 | 變數 | 功能 | 本機目前值 | 建議 |
 |---|---|---|---|
-| `OLLAMA_HOST` | 監聽位址與連接埠 | `127.0.0.1:11434` | 只在要給區網其他機器用時改 `0.0.0.0`（5-3-3） |
-| `OLLAMA_MODELS` | 模型檔目錄 | `~/.ollama/models` | 磁碟不夠時指到外接碟（5-1-3） |
+| `OLLAMA_HOST` | 監聽位址與連接埠 | `127.0.0.1:11434` | 只在要給區網其他機器用時改 `0.0.0.0`（1-3-3） |
+| `OLLAMA_MODELS` | 模型檔目錄 | `~/.ollama/models` | 磁碟不夠時指到外接碟（1-1-3） |
 | `OLLAMA_CONTEXT_LENGTH` | 所有模型的預設 context | `0`（自動，本機得 262144） | 維持。要省記憶體可設 `65536` |
 | `OLLAMA_KEEP_ALIVE` | 預設常駐時間 | `5m` | 日常開發可設 `1h` 或 `-1` |
 | `OLLAMA_MAX_LOADED_MODELS` | 同時載入的模型數 | `0`（自動，單 GPU 3 個） | 維持 |
@@ -254,7 +254,7 @@ brew services restart ollama              # 服務重啟後才讀到
 grep "server config" /opt/homebrew/var/log/ollama.log | tail -1   # 確認生效
 ```
 
-`launchctl setenv` 登出後失效，要永久生效見 5-3-3 的說明。
+`launchctl setenv` 登出後失效，要永久生效見 1-3-3 的說明。
 
 ## A-6 在各種工具裡怎麼設
 
@@ -263,13 +263,13 @@ grep "server config" /opt/homebrew/var/log/ollama.log | tail -1   # 確認生效
 | 入口 | 寫法 | 備註 |
 |---|---|---|
 | CLI 互動模式 | `/set parameter temperature 0`、`/set parameter num_ctx 32768` | 只在這個對話有效 |
-| CLI 一次性 | `ollama run <模型> --think=false --keepalive 1h --verbose "問題"` | `--format json` 只對 GGUF 模型有效（5-6-1） |
+| CLI 一次性 | `ollama run <模型> --think=false --keepalive 1h --verbose "問題"` | `--format json` 只對 GGUF 模型有效（1-6-1） |
 | 原生 REST `/api/generate`、`/api/chat` | `"options": {"temperature": 0, "num_ctx": 8192, "num_predict": 200, "seed": 42, "stop": ["。"]}`；`"think": false`、`"keep_alive": -1` 放最上層 | 功能最完整 |
-| Python `ollama` 套件 | `ollama.chat(model=..., messages=..., think=False, options={"temperature": 0, "num_predict": 4})` | 16-3 的 `rag.py` 就是這樣寫 |
+| Python `ollama` 套件 | `ollama.chat(model=..., messages=..., think=False, options={"temperature": 0, "num_predict": 4})` | 2-3 的 `rag.py` 就是這樣寫 |
 | OpenAI 相容 `/v1` | `temperature`、`top_p`、`max_tokens`、`seed`、`stop`、`presence_penalty`、`frequency_penalty`、`reasoning_effort` 用 OpenAI 的欄位名 | **不接受 `options`、不能改 `num_ctx`**（實測見下） |
-| Modelfile | `PARAMETER temperature 0.3`、`PARAMETER num_ctx 32768`、`PARAMETER stop "<|im_end|>"` | 建成新模型名稱後對所有程式生效；會多佔一份記憶體（5-5-1） |
-| Hermes Agent | `hermes config set model.ollama_num_ctx 65536`；`--reasoning none` | Hermes 會自己送 `options.num_ctx`（18-7-2、18-8-2） |
-| Open WebUI | 模型設定裡的 Advanced Params，或 API 的 `params` | 16-4-1 用 `params.think=false` |
+| Modelfile | `PARAMETER temperature 0.3`、`PARAMETER num_ctx 32768`、`PARAMETER stop "<|im_end|>"` | 建成新模型名稱後對所有程式生效；會多佔一份記憶體（1-5-1） |
+| Hermes Agent | `hermes config set model.ollama_num_ctx 65536`；`--reasoning none` | Hermes 會自己送 `options.num_ctx`（3-7-2、3-8-2） |
+| Open WebUI | 模型設定裡的 Advanced Params，或 API 的 `params` | 2-4-1 用 `params.think=false` |
 
 `/v1` 端點實測（小模型）：
 
@@ -280,7 +280,7 @@ options.num_ctx 4096       → 請求成功，但 ollama ps CONTEXT 仍是 32768
 /api/generate options.num_ctx 4096 → ollama ps CONTEXT 4096, SIZE 315 MB     （原生 API 有效）
 ```
 
-結論：用 OpenAI SDK 的程式（Hermes、Open WebUI、AnythingLLM 等）**改不了 context**，要改 context 只能在 Modelfile 或伺服器環境變數那兩層做。這就是第十八章 Hermes 要特別處理 `num_ctx` 的原因。
+結論：用 OpenAI SDK 的程式（Hermes、Open WebUI、AnythingLLM 等）**改不了 context**，要改 context 只能在 Modelfile 或伺服器環境變數那兩層做。這就是第三章 Hermes 要特別處理 `num_ctx` 的原因。
 
 ## A-7 初學者的調參流程
 

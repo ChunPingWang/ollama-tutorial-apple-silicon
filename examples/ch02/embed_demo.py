@@ -1,5 +1,5 @@
 """
-16-2-2 embedding 模型：把文字變成向量，用餘弦相似度比較語意距離。
+2-2-2 embedding 模型：把文字變成向量，用餘弦相似度比較語意距離。
 
 執行： python embed_demo.py [模型名稱]   （預設 qwen3-embedding:0.6b）
 """

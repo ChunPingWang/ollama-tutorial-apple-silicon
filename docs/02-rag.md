@@ -1,12 +1,12 @@
-# 第十六章：RAG
+# 第二章：RAG
 
 > 實測環境：Apple M5 Max / 128 GB / macOS 27.2 / Ollama 0.40.13（brew service）。
 > 本章所有指令與輸出都在這台機器上實際執行過；沒做到的會標「未驗證」或「本機略過」。
-> 範例程式在 `examples/ch16/`，用 `python3 -m venv .venv && source .venv/bin/activate && pip install -r examples/ch16/requirements.txt` 準備環境。
+> 範例程式在 `examples/ch02/`，用 `python3 -m venv .venv && source .venv/bin/activate && pip install -r examples/ch02/requirements.txt` 準備環境。
 
-## 16-1 RAG 原理
+## 2-1 RAG 原理
 
-### 16-1-1 檢索與生成
+### 2-1-1 檢索與生成
 
 RAG（Retrieval-Augmented Generation）把「回答問題」拆成兩步：
 
@@ -17,13 +17,13 @@ RAG（Retrieval-Augmented Generation）把「回答問題」拆成兩步：
 
 為什麼不直接把整份文件塞進 prompt？qwen3.6 的 context 有 256K，本章 4 份文件只有 4,785 字元，塞得下。但文件一多就塞不下，而且每次都要重算整份 prompt。實測 `rag.py` 一次只送 3 段（約 320 到 415 個 prompt tokens），生成 0.7 秒就回答完。
 
-RAG 的另一個好處是**可追溯**：回答後面標 `[1]` 這類編號，可以回頭查是哪一段文件說的。資料裡沒有的問題，模型會回「不知道」（16-4-1 有實測）。
+RAG 的另一個好處是**可追溯**：回答後面標 `[1]` 這類編號，可以回頭查是哪一段文件說的。資料裡沒有的問題，模型會回「不知道」（2-4-1 有實測）。
 
-### 16-1-2 embedding
+### 2-1-2 embedding
 
 embedding 模型把一段文字變成一個固定長度的向量，語意接近的文字向量方向也接近。比較兩個向量用餘弦相似度（cosine similarity），1 表示完全相同方向，0 表示無關。
 
-實測 `examples/ch16/embed_demo.py`，查詢句是「模型檔案存放的目錄在哪裡？」：
+實測 `examples/ch02/embed_demo.py`，查詢句是「模型檔案存放的目錄在哪裡？」：
 
 | 候選句 | qwen3-embedding:0.6b | embeddinggemma |
 |---|---|---|
@@ -33,13 +33,13 @@ embedding 模型把一段文字變成一個固定長度的向量，語意接近�
 
 兩個模型都把正確答案排第一，而且查詢句和答案句沒有任何共同關鍵字（「存放的目錄」對「放在 ~/.ollama/models」），這是關鍵字搜尋做不到的。絕對分數不能跨模型比較，只看同一模型內的排序。
 
-## 16-2 建立索引
+## 2-2 建立索引
 
-### 16-2-1 切分文件
+### 2-2-1 切分文件
 
 文件要先切成「塊」（chunk），每塊各算一個向量。塊太大，一塊裡混了多個主題，向量會模糊；塊太小，上下文不夠，模型答不出來。
 
-`examples/ch16/chunk.py` 實作兩種切法，對 `examples/ch16/corpus/` 的 4 份 Markdown 文件實測：
+`examples/ch02/chunk.py` 實作兩種切法，對 `examples/ch02/corpus/` 的 4 份 Markdown 文件實測：
 
 ```
 $ python chunk.py
@@ -59,7 +59,7 @@ $ python chunk.py
 
 本章後面都用 `by_heading`。中文一個字就是一個字元，300 字元大約等於 200 到 250 個 token。
 
-### 16-2-2 embedding 模型
+### 2-2-2 embedding 模型
 
 Ollama 的 embedding 端點是 `POST /api/embed`，一次可以送多句。本機下載了兩個模型比較：
 
@@ -87,9 +87,9 @@ qwen3.6:35b-a3b-coding-mxfp8    39 GB     100% GPU     262144     mlx
 
 `qwen3-embedding:0.6b` 檔案只有 639 MB，載入後佔 3.0 GB，差額是 32K context 的 KV cache。
 
-### 16-2-3 向量資料庫
+### 2-2-3 向量資料庫
 
-向量資料庫做兩件事：存「向量 + 原文 + 來源」，以及「給一個查詢向量，回傳最近的 k 筆」。本章實作兩種，程式都在 `examples/ch16/`：
+向量資料庫做兩件事：存「向量 + 原文 + 來源」，以及「給一個查詢向量，回傳最近的 k 筆」。本章實作兩種，程式都在 `examples/ch02/`：
 
 | | sqlite-vec | Qdrant |
 |---|---|---|
@@ -140,7 +140,7 @@ Qdrant 版本： 1.20.0
 
 兩種資料庫對同一查詢回傳的前三名完全相同。Qdrant 多做到的是最後那段：在 `points/query` 裡加 `filter`，向量搜尋同時過濾 `source` 欄位。`store_qdrant.py` 只用標準庫 `urllib` 呼叫 REST API（`PUT /collections/{name}`、`PUT /collections/{name}/points`、`POST /collections/{name}/points/query`），不需要額外套件。
 
-## 16-3 現成工具
+## 2-3 現成工具
 
 不想寫程式的話，這兩個工具都能「上傳文件 → 用本機 Ollama 回答」。兩個都在這台機器裝起來跑過，而且都用 `qwen3-embedding:0.6b` 做 embedding、`qwen3.6` 回答。
 
@@ -156,7 +156,7 @@ Qdrant 版本： 1.20.0
 | qwen3.6 的思考 | 無法關閉，`<think>` 內容會進回答（本次 3,421 字元） | 請求帶 `params.think=false` 可關 |
 | 多人 | 要另外開 multi-user mode | 內建帳號與權限 |
 
-### 16-3-1 AnythingLLM
+### 2-3-1 AnythingLLM
 
 ```sh
 brew install --cask anythingllm      # 安裝到 /Applications/AnythingLLM.app
@@ -165,7 +165,7 @@ open -a AnythingLLM
 
 App 開啟後會在本機開兩個 port：`127.0.0.1:3001` 是主伺服器，`127.0.0.1:8888` 是文件處理器（collector）。所有設定都存在 `~/Library/Application Support/anythingllm-desktop/storage/`，裡面有 `anythingllm.db`（SQLite）、`documents/`（上傳後解析成 JSON 的文件）、`lancedb/`（向量）、`logs/`。
 
-GUI 的操作順序是：設定（左下齒輪）→ **LLM Preference** 選 Ollama、填 `http://127.0.0.1:11434`、選模型 → **Embedding Preference** 選 Ollama、選 `qwen3-embedding:0.6b` → 回到 workspace 按上傳圖示拖入文件 → 按 **Save and Embed** → 對話。**GUI 步驟未驗證**（這台機器的 `screencapture` 沒有螢幕錄製權限，無法截圖），以下改用 App 內建的本機 API 做同樣的事，`examples/ch16/anythingllm_api.sh` 可以重跑：
+GUI 的操作順序是：設定（左下齒輪）→ **LLM Preference** 選 Ollama、填 `http://127.0.0.1:11434`、選模型 → **Embedding Preference** 選 Ollama、選 `qwen3-embedding:0.6b` → 回到 workspace 按上傳圖示拖入文件 → 按 **Save and Embed** → 對話。**GUI 步驟未驗證**（這台機器的 `screencapture` 沒有螢幕錄製權限，無法截圖），以下改用 App 內建的本機 API 做同樣的事，`examples/ch02/anythingllm_api.sh` 可以重跑：
 
 ```sh
 # 設定 LLM 與 embedding（等同 GUI 的 LLM / Embedding Preference）
@@ -195,7 +195,7 @@ metrics: prompt 524 + completion 1037 tokens, 6.5 s, 158.8 tok/s, provider Ollam
 
 > 本機狀態：AnythingLLM 已安裝並設定成 Ollama，留有 workspace `ollama-notes`。不需要可以 `brew uninstall --cask anythingllm` 並刪除上述 storage 目錄。
 
-### 16-3-2 Open WebUI 知識庫
+### 2-3-2 Open WebUI 知識庫
 
 ```sh
 docker run -d --name open-webui -p 3000:8080 \
@@ -209,7 +209,7 @@ curl localhost:3000/api/version     # {"version":"0.12.5"}
 
 容器裡要用 `host.docker.internal` 才連得到 Mac 上的 Ollama。第一個註冊的帳號自動是 admin。這台機器下載映像檔花了約 10 分鐘（和 Nemotron 一起搶 11 MB/s 的頻寬），啟動到 health 通過約 30 秒。
 
-GUI 的路徑是：**Workspace → Knowledge → +** 建知識庫並上傳檔案；對話時輸入 `#` 選知識庫；embedding 模型在 **Admin Panel → Settings → Documents** 改成 Ollama。**GUI 步驟未驗證**，以下用 REST API 走完同樣流程，`examples/ch16/openwebui_api.sh` 可以重跑。Open WebUI 的 `/openapi.json` 在正式映像檔是關閉的（回 HTML），下面的端點都是實際打通的：
+GUI 的路徑是：**Workspace → Knowledge → +** 建知識庫並上傳檔案；對話時輸入 `#` 選知識庫；embedding 模型在 **Admin Panel → Settings → Documents** 改成 Ollama。**GUI 步驟未驗證**，以下用 REST API 走完同樣流程，`examples/ch02/openwebui_api.sh` 可以重跑。Open WebUI 的 `/openapi.json` 在正式映像檔是關閉的（回 HTML），下面的端點都是實際打通的：
 
 | 步驟 | 端點 | 實測結果 |
 |---|---|---|
@@ -240,11 +240,11 @@ docker rm -f open-webui                      # 用完移除容器；帳號、知
 docker run -d --restart unless-stopped ...   # 要開機自動啟動就加 --restart unless-stopped（未驗證重開機）
 ```
 
-## 16-4 自己寫一套
+## 2-4 自己寫一套
 
-### 16-4-1 Python 實作
+### 2-4-1 Python 實作
 
-`examples/ch16/rag.py` 把前面的零件串起來：
+`examples/ch02/rag.py` 把前面的零件串起來：
 
 ```
 chunk.py 切分 → ollama.embed → sqlite-vec (rag.db) → 檢索 top-3 → 組 prompt → ollama.chat 回答
@@ -275,7 +275,7 @@ $ python rag.py "台北 101 有多高？"
 
 模型照指示回「不知道」，不會從自己的知識編答案。
 
-### 16-4-2 rerank
+### 2-4-2 rerank
 
 向量相似度是「快但粗」的排序：embedding 模型只有 0.6B，而且查詢和段落是分開編碼的。rerank 是第二階段，先用向量取較多候選（8 塊），再用更強的模型逐一判斷「這段能不能回答這個問題」，只留前 3 塊給生成。
 
@@ -311,7 +311,7 @@ LLM 重排後（前 3）：
 
 這題不 rerank 也答對，因為 top-3 剛好有包含答案。rerank 的價值在候選多、答案落在第 4 名以後的時候；代價是每個候選多一次 LLM 呼叫，在這台機器上每次約 0.2 秒。
 
-### 16-4-3 換成 Super VL 回答
+### 2-4-3 換成 Super VL 回答
 
 `rag.py` 的生成模型由環境變數 `RAG_MODEL` 決定，檢索部分完全不變：
 
@@ -321,7 +321,7 @@ RAG_MODEL=nemotron-3.5-super python rag.py "Ollama 的模型檔放在哪裡？�
 
 > **待模型下載完成後驗證。** `nemotron-3.5-super` 是 84 GiB（82.35 GiB 權重 + 1.61 GiB 視覺 projector），這台機器以 11 MB/s 下載約需 2 小時。它和 qwen3.6（38 GB）加起來超過 GPU 可用的 107.5 GiB，Ollama 會先卸載 qwen3.6 再載入 Nemotron；embedding 模型（3 GB）可以留著，所以檢索不受影響，只有生成那一步換模型。預期差異：載入時間（84 GiB 從 SSD 讀進記憶體）、tok/s（dense 架構會明顯慢於 MoE 的 qwen3.6），以及長 context 時的 KV cache 記憶體。數字待補。
 
-## 16-5 本章小結
+## 2-5 本章小結
 
 | 項目 | 本機實測 |
 |---|---|
