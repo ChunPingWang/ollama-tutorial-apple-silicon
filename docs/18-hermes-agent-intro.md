@@ -277,7 +277,7 @@ hermes chat --oneshot -Q -q "回答一句話：1+1 等於幾？不要用工具�
 elapsed 7s
 ```
 
-看 Hermes 實際送了什麼最快的方法是在中間放一個記錄代理（本章用 60 行的 Python 腳本 [`examples/ch18/logproxy.py`](../examples/ch18/logproxy.py)，監聽 11435 轉到 11434，把每個請求的欄位與回應摘要寫成一行 JSON），再把 `--base-url` 指到 `http://127.0.0.1:11435/v1`。攔到的第一個對話請求：
+看 Hermes 實際送了什麼最快的方法是在中間放一個記錄代理（本章用約 70 行的 Python 腳本 [`examples/ch18/logproxy.py`](../examples/ch18/logproxy.py)，監聽 11435 轉到 11434，把每個請求的欄位與回應摘要寫成一行 JSON），再把 `--base-url` 指到 `http://127.0.0.1:11435/v1`。攔到的第一個對話請求：
 
 ```json
 {"path": "/v1/chat/completions", "stream": true, "reasoning_effort": "none",
