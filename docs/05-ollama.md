@@ -380,7 +380,7 @@ Docker 容器要連主機的 Ollama **不用**開放區網：用 `http://host.do
 
 ## 5-4 調整設定
 
-所有伺服器端設定都是環境變數（完整清單：`ollama serve --help`）。本機 Homebrew 服務目前生效的設定可以從 log 的 `server config` 行看到：
+所有伺服器端設定都是環境變數（完整清單：`ollama serve --help`；每個參數的意義、調整建議與採樣參數整理在[附錄 A](A1-model-tuning.md)）。本機 Homebrew 服務目前生效的設定可以從 log 的 `server config` 行看到：
 
 ```
 OLLAMA_CONTEXT_LENGTH:0  OLLAMA_FLASH_ATTENTION:true  OLLAMA_KV_CACHE_TYPE:q8_0  OLLAMA_KEEP_ALIVE:5m0s
@@ -603,4 +603,5 @@ ollama ps                                          # 應該變成空的
 | 設定 | 環境變數經 `launchctl setenv` + `brew services restart`；`keep_alive` 控制常駐 |
 | 匯入 | `ollama pull hf.co/<repo>:<quant>` 最快 |
 | 限制 | MLX 不支援 `format`；Modelfile 無法關思考；MLX runner 曾卡在 Stopping...（kill -9 runner 解決） |
+| 參數調整 | 三層覆蓋（請求 > Modelfile > 伺服器），逐一說明見[附錄 A](A1-model-tuning.md) |
 | 待補 | Nemotron 3.5 Super 執行結果、`OLLAMA_HOST` 區網開放的實測 |
