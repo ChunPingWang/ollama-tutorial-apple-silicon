@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# RAG 產生的資料
+examples/ch16/*.db
+examples/ch16/*.sqlite
+examples/ch16/qdrant_storage/
+examples/ch16/.cache/
+
+# macOS
+.DS_Store
+
+# 任何憑證
+.env
+*.token

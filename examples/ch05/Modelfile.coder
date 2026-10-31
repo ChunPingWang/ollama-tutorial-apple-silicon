@@ -1,0 +1,12 @@
+# 以主力模型為基底，做一個「預設不思考、固定 system prompt、較小 context」的客製版本。
+# 建立： ollama create coder -f examples/Modelfile.coder
+# 使用： ollama run coder
+# 刪除： ollama rm coder   （只刪 manifest，38GB 的權重 blob 和原模型共用，不會重複佔空間）
+FROM qwen3.6:35b-a3b-coding-mxfp8
+
+SYSTEM """你是資深軟體工程師。回答以程式碼為主，說明放在程式碼之後，使用繁體中文。
+不確定時先問清楚需求，不要猜。"""
+
+# 32K 對一般寫程式夠用，也比預設 256K 省記憶體與載入時間
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.3
