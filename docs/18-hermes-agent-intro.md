@@ -1,6 +1,6 @@
 # 第十八章：Hermes Agent 入門
 
-> 本章在這台機器（Apple M5 Max / 128 GB / macOS 27.2）上實測：Hermes Agent **v0.22.5**（2026.9.24, stable），接本機 Ollama 0.40.13 的 `qwen3.6:35b-a3b-coding-mxfp8`。沒有實測的項目標「未驗證」或「本機略過」。範例與設定檔在 [`examples/ch18/`](../examples/ch18/)。
+> 本章在這台機器（Apple M5 Max / 128 GB / macOS 27.2）上實測（原書 Windows 專屬小節與 LM Studio 不在本教材範圍）：Hermes Agent **v0.22.5**（2026.9.24, stable），接本機 Ollama 0.40.13 的 `qwen3.6:35b-a3b-coding-mxfp8`。沒有實測的項目標「未驗證」或「本機略過」。範例與設定檔在 [`examples/ch18/`](../examples/ch18/)。
 
 ## 18-1 Hermes Agent 是什麼
 
@@ -27,11 +27,11 @@ Hermes Agent 是 Nous Research 開源（MIT）的 AI agent，官方自稱「The 
 - **OpenClaw**：另一個開源個人 agent（原名 Clawdbot / Moltbot）。Hermes 可以匯入它的設定、記憶、技能與 API key：`hermes import-agent openclaw`（舊寫法 `hermes claw migrate`），同一個指令也能匯入 Claude Code、Codex CLI、Cursor 的設定。Ollama 的 `ollama launch` 也同時支援 `hermes` 和 `openclaw`。
 - **OpenShell**：NVIDIA 開源的 agent 沙箱執行環境：用政策宣告 agent 能碰什麼網路和檔案，核心層強制執行，真實憑證不進沙箱。官方支援 Linux、**macOS Apple Silicon**、Windows WSL2（實驗性），需要 Docker / Podman 或主機虛擬化。NVIDIA 的 **NemoClaw** 是在 OpenShell 裡一鍵部署 agent 的工具，預設 agent 是 OpenClaw，`nemohermes` 則是預選 Hermes 的別名；Hermes 的設定會放在沙箱內的 `/sandbox/.hermes`，推論可以路由到本機 Ollama。第十九章 19-6-3 討論。
 
-## 18-2 安裝桌面版
+## 18-2 安裝
 
-### 18-2-1 桌面版與 install.ps1
+### 18-2-1 CLI：install.sh
 
-**本機略過（Windows）。** `install.ps1` 是 Windows PowerShell 的安裝腳本。macOS 的對應指令是：
+macOS 的安裝指令：
 
 ```sh
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
@@ -39,13 +39,22 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 
 官方文件明確列出 **Homebrew 安裝（`brew install hermes-agent`）是不支援的方式**，雖然 formula 存在（0.22.4）。本機採官方腳本。腳本做的事（讀過原始碼確認）：下載固定版本的 `uv`，用它裝 Python 3.14 與 Hermes 原始碼到 `~/.hermes/hermes-agent/`，啟動器放 `~/.local/bin/hermes`，並在 `~/.zshrc` 加一行把 `~/.local/bin` 加進 PATH。預設還會裝 Chromium（瀏覽器工具）和 `cua-driver`（電腦操作），可用 `--skip-browser --skip-computer-use` 略過。
 
-### 18-2-2 從 Microsoft Store 安裝
+本機實際安裝的摘要：
 
-**本機略過（Windows）。** macOS 的桌面版是 DMG（Apple Silicon only），或 `brew install --cask hermes-desktop`。本機依指示不安裝桌面版。
+```
+✓ uv ready (uv 0.13.5 aarch64-apple-darwin)
+→ Installing Python dependencies / Preparing Node dependencies / Building the TUI / Building the web UI
+→ Syncing bundled skills...  + 58 new
+✓ added ~/.local/bin to PATH in ~/.zshrc 與 ~/.zprofile
+→ setup skipped (no terminal); run 'hermes setup' after install
+```
+
+從 Claude Code 的 `!` 前綴執行時沒有 TTY，所以互動的 `hermes setup` 與 `hermes gateway install` 被跳過，要另外跑。已開著的終端機要 `source ~/.zshrc` 或重開才找得到 `hermes`。
+
 
 ### 18-2-3 開啟桌面版
 
-**本機略過：未安裝桌面版。** 桌面版與 CLI 共用 `~/.hermes` 下的所有設定、sessions、技能、記憶；若日後安裝，`hermes desktop` 也能從 CLI 啟動它。
+桌面版（`brew install --cask hermes-desktop`，Hermes-Setup.dmg）已安裝並通過 Gatekeeper 公證檢查（`spctl`：`accepted, source=Notarized Developer ID`）。它是 12 MB 的 bootstrap App，啟動後會下載原始碼並在本機建置 Electron 版；桌面版與 CLI 共用 `~/.hermes` 下的所有設定、sessions、技能、記憶，`hermes desktop` 也能從 CLI 啟動它。**建置與開啟流程待補**（撰寫時 Hermes-Setup 視窗停在等待操作的畫面，無螢幕擷取權限）。
 
 
 ## 18-3 Local models 一鍵本機模型
@@ -120,13 +129,6 @@ hermes status
 
 Hermes 會辨識出對方是 Ollama：用本機記錄代理攔截到它在第一次對話前依序呼叫了 `/api/tags`、`/api/show`（讀 `thinking`、template、parameters）、`/v1/models`，然後對 `/v1/chat/completions` 多送一個 Ollama 專用欄位 `"options": {"num_ctx": 262144}`，確保 Ollama 用模型的完整 context。
 
-### 18-4-2 LM Studio 與 llama-server
-
-**未驗證（本機沒裝 LM Studio，也沒另外跑 llama-server）。** 設定方式從 `config.yaml` 範本確認：
-
-- LM Studio 是一級供應者：`model.provider: lmstudio`，預設 `http://127.0.0.1:1234/v1`，可選 `LM_API_KEY`。
-- llama-server / vLLM：`provider` 寫 `llamacpp`、`vllm` 或 `ollama` 都是 `custom` 的別名，`base_url` 指到各自的 `/v1`。
-- 多個端點可以在 `providers:` 下各取一個名字（`base_url`、`api_key`、`api_mode`），用 `--provider <名字>` 切換。
 
 ## 18-5 第一個 Agent 任務
 
@@ -206,23 +208,7 @@ tts                 1   1,518 B
 
 ## 18-6 終端機的檢查與設定
 
-### 18-6-1 install.ps1 的失敗
 
-**本機略過（Windows）。** macOS 的 `install.sh` 在這台機器一次成功，摘要：
-
-```
-✓ uv ready (uv 0.13.5 aarch64-apple-darwin)
-→ Installing Python dependencies / Preparing Node dependencies / Building the TUI / Building the web UI
-→ Syncing bundled skills...  + 58 new
-✓ added ~/.local/bin to PATH in ~/.zshrc 與 ~/.zprofile
-→ setup skipped (no terminal); run 'hermes setup' after install
-```
-
-從 Claude Code 的 `!` 前綴執行時沒有 TTY，所以互動的 `hermes setup` 與 `hermes gateway install` 被跳過，要另外跑。
-
-### 18-6-2 ARM64 被排除的元件
-
-**本機略過（Windows on Arm）。** macOS Apple Silicon 是官方 Tier 1 平台，`hermes doctor` 的必要套件全綠；唯一和架構有關的是桌面版 bootstrap 只提供 arm64。可選套件 `python-telegram-bot`、`discord.py` 顯示「not installed」，是因為沒設定那些平台，不是架構問題。
 
 ### 18-6-3 hermes doctor 與資料目錄
 
@@ -365,9 +351,6 @@ hermes config set auxiliary.title_generation.model_upgrade_enabled false   # 本
 
 設完後代理確認每輪只剩 `/api/show` 和一個 `/v1/chat/completions`，沒有 501。
 
-### 18-8-3 Windows 原生的陷阱
-
-**本機略過（Windows）。** macOS 這側唯一的「陷阱」是 shell：安裝腳本把 `~/.local/bin` 加進 `~/.zshrc` 和 `~/.zprofile`，已開著的終端機要 `source ~/.zshrc` 或重開才找得到 `hermes`。
 
 ## 18-9 本章小結
 
@@ -378,4 +361,4 @@ hermes config set auxiliary.title_generation.model_upgrade_enabled false   # 本
 | 速度 | 一句話 7 秒、含工具 6 秒；prompt 13K tokens，Ollama 快取讓第二輪起幾乎不重算 |
 | 必要調整 | `--reasoning none`（或 `agent.reasoning_effort`）；`auxiliary.title_generation.model_upgrade_enabled false` |
 | 限制 | 模型 context 必須 ≥ 64K（32K GGUF 直接失敗）；一次性模式拒絕所有需核准指令；MLX 不支援 json_schema |
-| 未做 | 桌面版 GUI 流程、Local models 代管 runtime、LM Studio |
+| 未做 | 桌面版 GUI 流程、Local models 代管 runtime |

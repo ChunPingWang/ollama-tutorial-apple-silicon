@@ -1,6 +1,6 @@
 # Ollama 本機教材（Apple M5 Max / 128 GB）
 
-這份教材以 [`~/workspace/localhost/README.md`](../localhost/README.md) 記錄的這台電腦為對象，章節編號沿用《NVIDIA RTX Spark 地端 AI 全面玩透》的目錄，但所有內容改成在 macOS / Apple Silicon 上**實際執行過**的結果。原書 Windows / CUDA 專屬的小節保留標題，標註略過原因。
+這份教材以 [`~/workspace/localhost/README.md`](../localhost/README.md) 記錄的這台電腦為對象，章節編號沿用《NVIDIA RTX Spark 地端 AI 全面玩透》的目錄，但所有內容改成在 macOS / Apple Silicon 上**實際執行過**的結果。原書 Windows / CUDA 專屬小節、訊息平台（Telegram / LINE）與 LM Studio 不在本教材範圍。
 
 | 項目 | 規格 |
 |---|---|
@@ -15,8 +15,8 @@
 |---|---|---|
 | 第五章 Ollama | [docs/05-ollama.md](docs/05-ollama.md) | 已驗證（Nemotron 3.5 Super 執行結果、`OLLAMA_HOST` 區網開放待補） |
 | 第十六章 RAG | [docs/16-rag.md](docs/16-rag.md) | 已驗證（Nemotron 3.5 Super 回答待補） |
-| 第十八章 Hermes Agent 入門 | [docs/18-hermes-agent-intro.md](docs/18-hermes-agent-intro.md) | 已驗證（桌面版 GUI 小節略過） |
-| 第十九章 Hermes Agent 進階 | [docs/19-hermes-agent-advanced.md](docs/19-hermes-agent-advanced.md) | 已驗證（Telegram / LINE 無 token、OpenShell 未安裝） |
+| 第十八章 Hermes Agent 入門 | [docs/18-hermes-agent-intro.md](docs/18-hermes-agent-intro.md) | 已驗證（桌面版建置流程待補） |
+| 第十九章 Hermes Agent 進階 | [docs/19-hermes-agent-advanced.md](docs/19-hermes-agent-advanced.md) | 已驗證（OpenShell 未安裝） |
 
 ## 範例程式
 
@@ -41,4 +41,4 @@ python examples/ch05/04_tools_agent.py "現在幾點？"
 
 - 沒有特別標註的指令與輸出，都是 2026-10-31 在這台機器上實際執行的結果。
 - **未驗證**：有文件依據但本機還沒跑過。
-- **本機略過：原因**：這台電腦無法或不需要執行（例如 CUDA 專屬問題、Windows 安裝程式）。
+- **本機略過：原因**：這台電腦無法或不需要執行。

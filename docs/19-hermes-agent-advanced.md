@@ -145,7 +145,7 @@ elapsed 5s
 
 代理顯示它呼叫了兩次工具（搜尋、再讀該 session 內容）。CLI 端對應的是 `hermes sessions list`、`hermes --resume <id>`。
 
-### 19-2-3 外部記憶後端與 ARM64
+### 19-2-3 外部記憶後端
 
 ```sh
 $ hermes memory status
@@ -156,7 +156,7 @@ $ hermes memory status
     • retaindb  (API key / local)
 ```
 
-內建記憶永遠開著；外部後端是**附加**的向量/圖記憶（RetainDB、ByteRover 隨附；Honcho、Mem0、Supermemory 等用 `hermes plugins install <name>`），用 `hermes memory setup` 啟用、一次只能一個。本機沒有啟用任何外部後端（**未驗證**）。原書的 ARM64 問題是 Windows on Arm 缺少某些後端的原生套件；macOS Apple Silicon 沒有這個問題，兩個隨附插件都已列在可用清單。
+內建記憶永遠開著；外部後端是**附加**的向量/圖記憶（RetainDB、ByteRover 隨附；Honcho、Mem0、Supermemory 等用 `hermes plugins install <name>`），用 `hermes memory setup` 啟用、一次只能一個。本機沒有啟用任何外部後端（**未驗證**）；兩個隨附插件都已列在 macOS Apple Silicon 的可用清單。
 
 ## 19-3 排程
 
@@ -281,39 +281,9 @@ $ ps -o command= -p 29917
 python3 -m hermes_cli.main --profile default gateway run --quiet --idle-exit
 ```
 
-這個行程是第一次 `hermes chat` 時自動起的（`--idle-exit`：閒置一段時間自己結束）。要長駐見 19-5-4。平台設定走互動精靈 `hermes gateway setup`，或直接寫 `~/.hermes/.env`（token）與 `config.yaml` 的 `gateway.platforms`。本機沒有任何平台的 token，19-5-2、19-5-3 只能驗證到設定項與 `hermes doctor` 的套件檢查（`python-telegram-bot` 顯示 optional, not installed，設定 Telegram 時才會裝）。
+這個行程是第一次 `hermes chat` 時自動起的（`--idle-exit`：閒置一段時間自己結束）。要長駐見 19-5-4。平台設定走互動精靈 `hermes gateway setup`，或直接寫 `~/.hermes/.env`（token）與 `config.yaml` 的 `gateway.platforms`。本機沒有任何訊息平台的 token，各平台（Telegram、LINE 等）的設定不在本教材範圍，見官方 Messaging 文件。
 
-### 19-5-2 Telegram
 
-**未驗證（沒有 bot token）。** 官方步驟：
-
-1. Telegram 找 @BotFather → `/newbot` → 取得 token；找 @userinfobot 取得自己的數字 user id。
-2. `hermes gateway setup` 選 Telegram 填入，或手動寫 `~/.hermes/.env`：
-   ```
-   TELEGRAM_BOT_TOKEN=<token>
-   TELEGRAM_ALLOWED_USERS=<你的 user id，逗號分隔多個>
-   ```
-3. `hermes gateway run`（前景）或 `hermes gateway start`（服務），對 bot 傳訊息測試。
-4. 選用：在想收排程結果的聊天裡送 `/sethome`，或設 `TELEGRAM_HOME_CHANNEL=<chat id>`。
-
-沒在白名單的人傳訊會收到配對碼，你在終端機 `hermes pairing approve telegram <CODE>` 才放行；配對碼一小時過期。桌面版 / dashboard 的 Messaging → Telegram 頁有「Create with QR」可以自動建 bot 並寫入這兩個變數。
-
-### 19-5-3 LINE
-
-**未驗證（沒有 LINE 官方帳號）。** 和 Telegram 的差別是 LINE 用 **webhook**，Hermes 必須有一個公開的 HTTPS 網址：
-
-1. LINE Developers Console 建 Provider → Messaging API channel；複製 **Channel secret**，發一個長效 **Channel access token**；關掉自動回覆與歡迎訊息。
-2. 把本機的 webhook 埠（預設 8646，`LINE_PORT` 可改）打到公網：`cloudflared tunnel --url http://localhost:8646`（建議）或 `ngrok http 8646`。
-3. `~/.hermes/.env`：
-   ```
-   LINE_CHANNEL_ACCESS_TOKEN=...
-   LINE_CHANNEL_SECRET=...
-   LINE_ALLOWED_USERS=U...          # 或 LINE_ALLOWED_GROUPS=C... / LINE_ALLOWED_ROOMS=R...
-   LINE_PUBLIC_URL=https://<tunnel>  # 傳圖片/語音才需要
-   ```
-   `config.yaml`：`gateway.platforms.line.enabled: true`。
-4. Console 的 Webhook URL 填 `https://<tunnel>/line/webhook`，按 Verify、開啟 Use webhook。
-5. `hermes gateway` 啟動後加 bot 為好友傳訊。健康檢查：`curl -i https://<tunnel>/line/webhook/health` 應回 `{"status":"ok","platform":"line"}`。
 
 ### 19-5-4 開機自動啟動
 
@@ -419,6 +389,6 @@ Ignoring TERMINAL_CWD='/Users/rexwang' for docker backend (host/relative path wo
 | 記憶 | `USER.md` / `MEMORY.md` 各 1,375 / 2,200 字元上限，模型會自己分類；session 全文搜尋可用 |
 | 排程 | `hermes cron create` + gateway；立即執行驗證成功；無人看管時危險指令預設拒絕 |
 | MCP / 子 Agent | 型錄一行裝 DeepWiki 並成功呼叫；delegate_task 開兩個子 agent（17 工具、10.8K tokens）9 秒完成 |
-| 訊息平台 | gateway 自動啟動；launchd 安裝/移除驗證；Telegram / LINE 僅文件（無 token） |
+| 訊息平台 | gateway 自動啟動；launchd 安裝/移除驗證 |
 | 安全 | smart / manual / off 三種核准模式 + hardline blocklist；`hermes approvals test` 可離線測；Docker 後端實測進 Debian 13 容器（改設定後要重啟 gateway） |
 | 未做 | `/learn`（需互動 session）、外部記憶後端、OpenShell |

@@ -1,6 +1,6 @@
 # 第五章：Ollama
 
-本章所有指令與輸出都在下面這台電腦上實際執行過（2026-10-31）。沒有驗證到的項目會明確標示「未驗證」或「本機略過」。
+本章所有指令與輸出都在下面這台電腦上實際執行過（2026-10-31）。沒有驗證到的項目會明確標示「未驗證」。原書 Windows / CUDA 專屬的內容（illegal memory access 等）不在本教材範圍。
 
 | 項目 | 規格 |
 |---|---|
@@ -28,7 +28,7 @@ $ file /opt/homebrew/bin/ollama
 /opt/homebrew/bin/ollama: Mach-O 64-bit executable arm64
 ```
 
-不需要 Rosetta。本書原稿（Windows on Arm）討論的 Arm64 / x64 / Prism 模擬問題，在這台機器上不存在。
+不需要 Rosetta。
 
 兩種安裝方式，擇一即可：
 
@@ -519,11 +519,9 @@ $ curl -s localhost:11434/api/chat -d '{"model":"hf.co/Qwen/Qwen2.5-0.5B-Instruc
 
 ## 5-6 已知問題
 
-### 5-6-1 illegal memory access
+### 5-6-1 structured output is unavailable
 
-**本機略過。** 這是 CUDA 的錯誤訊息（`CUDA error: an illegal memory access was encountered`），只發生在 NVIDIA GPU；Apple Silicon 走 Metal / MLX，沒有這個問題。
-
-這台機器上實際遇到的對應問題是 **MLX runner 不支援結構化輸出**。任何帶 `format` 的請求（`"json"` 或 JSON Schema）都會失敗：
+這台機器上最常撞到的錯誤：**MLX runner 不支援結構化輸出**。任何帶 `format` 的請求（`"json"` 或 JSON Schema）都會失敗：
 
 ```sh
 $ curl -s localhost:11434/api/generate -d '{"model":"qwen3.6:35b-a3b-coding-mxfp8","prompt":"...","format":"json","stream":false}'
@@ -551,7 +549,7 @@ name='Taipei' country='Taiwan' population=2500000
 
 ### 5-6-2 記憶體回報不準
 
-原稿討論的是 Windows 上「專屬 / 共用 GPU 記憶體」各工具數字不一致。macOS 統一記憶體沒有這個區分，本機實測三個模型同時載入時，`ollama ps` 的 SIZE 與行程的實際 physical footprint 很接近：
+macOS 統一記憶體沒有「專屬 / 共用 GPU 記憶體」的區分，本機實測三個模型同時載入時，`ollama ps` 的 SIZE 與行程的實際 physical footprint 很接近：
 
 | 模型 | 檔案大小 | `ollama ps` SIZE | 行程 `footprint` |
 |---|---|---|---|
@@ -604,5 +602,5 @@ ollama ps                                          # 應該變成空的
 | 多模型 | 可同時載入；衍生模型會再佔一份記憶體 |
 | 設定 | 環境變數經 `launchctl setenv` + `brew services restart`；`keep_alive` 控制常駐 |
 | 匯入 | `ollama pull hf.co/<repo>:<quant>` 最快 |
-| 限制 | MLX 不支援 `format`；Modelfile 無法關思考；MLX runner 曾卡在 Stopping...（kill -9 runner 解決）；CUDA 類問題不適用 |
+| 限制 | MLX 不支援 `format`；Modelfile 無法關思考；MLX runner 曾卡在 Stopping...（kill -9 runner 解決） |
 | 待補 | Nemotron 3.5 Super 執行結果、`OLLAMA_HOST` 區網開放的實測 |
