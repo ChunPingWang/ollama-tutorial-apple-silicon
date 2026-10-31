@@ -24,7 +24,7 @@
 ```
 examples/
   ch01/   REST API、Python（ollama / openai 套件）、工具呼叫 Agent、JSON 輸出、視覺、Modelfile
-  ch02/   文件切分、embedding、sqlite-vec / Qdrant、RAG 管線、LLM rerank
+  ch02/   文件切分（三種切法與命中率比較）、embedding、sqlite-vec / Qdrant、RAG 管線、LLM rerank
   ch03/   logproxy.py：記錄 Hermes 送給 Ollama 的每個請求（第三、四章的觀察工具）
 ```
 
