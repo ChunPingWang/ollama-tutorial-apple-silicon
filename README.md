@@ -14,9 +14,9 @@
 | 章 | 檔案 | 狀態 |
 |---|---|---|
 | 第五章 Ollama | [docs/05-ollama.md](docs/05-ollama.md) | 已驗證（Nemotron 3.5 Super 執行結果、`OLLAMA_HOST` 區網開放待補） |
-| 第十六章 RAG | [docs/16-rag.md](docs/16-rag.md) | 撰寫中 |
-| 第十八章 Hermes Agent 入門 | [docs/18-hermes-agent-intro.md](docs/18-hermes-agent-intro.md) | 待 Hermes CLI 安裝後驗證 |
-| 第十九章 Hermes Agent 進階 | [docs/19-hermes-agent-advanced.md](docs/19-hermes-agent-advanced.md) | 待 Hermes CLI 安裝後驗證 |
+| 第十六章 RAG | [docs/16-rag.md](docs/16-rag.md) | 已驗證（Nemotron 3.5 Super 回答待補） |
+| 第十八章 Hermes Agent 入門 | [docs/18-hermes-agent-intro.md](docs/18-hermes-agent-intro.md) | 已驗證（桌面版 GUI 小節略過） |
+| 第十九章 Hermes Agent 進階 | [docs/19-hermes-agent-advanced.md](docs/19-hermes-agent-advanced.md) | 已驗證（Telegram / LINE 無 token、OpenShell 未安裝） |
 
 ## 範例程式
 
@@ -24,7 +24,7 @@
 examples/
   ch05/   REST API、Python（ollama / openai 套件）、工具呼叫 Agent、JSON 輸出、視覺、Modelfile
   ch16/   文件切分、embedding、sqlite-vec / Qdrant、RAG 管線、LLM rerank
-  ch18/   Hermes Agent 設定檔與測試腳本
+  ch18/   logproxy.py：記錄 Hermes 送給 Ollama 的每個請求（第十八、十九章的觀察工具）
 ```
 
 Python 範例的執行方式（Homebrew 的 Python 3.15 不允許直接 `pip install`，要用 venv）：

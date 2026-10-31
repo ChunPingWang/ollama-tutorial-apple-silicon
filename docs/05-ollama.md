@@ -572,6 +572,26 @@ footprint -p <runner pid>        # phys_footprint 才是 macOS 真正計帳的�
 3. **`ollama ps` 的 SIZE 單位是 GB（10^9），log 用 GiB（2^30）**，38 GB ≈ 35.7 GiB。
 4. 活動監視器看的是整個系統，Ollama 之外的 GPU 用量（瀏覽器、IDE）也算在 wired 記憶體裡，接近 107.5 GiB 上限時會開始把模型層放到 CPU（`PROCESSOR` 不再是 100% GPU）。
 
+### 5-6-3 MLX runner 卡在 Stopping...（本機實際遇到）
+
+**現象**：Open WebUI 對 `qwen3.6:35b-a3b-coding-mxfp8` 送出第一個 RAG 請求（思考模式開著、串流）後一直沒有回應；之後所有排隊的請求都被卡住，`ollama ps` 的 `UNTIL` 欄顯示 `Stopping...` 超過 10 分鐘不變，`ollama stop` 也無效。同一時間另一個只做一句話問答的 Hermes Agent 請求花了 7 分 17 秒才回來（正常情況 7 秒）。
+
+```
+$ ollama ps
+NAME                            SIZE     PROCESSOR    CONTEXT    RUNNER    UNTIL
+qwen3.6:35b-a3b-coding-mxfp8    38 GB    100% GPU     262144     mlx       Stopping...
+```
+
+**解法**：直接砍掉 runner 子行程，Ollama 主程式（`ollama serve`）不用重啟，下一個請求會重新載入模型（約 5 秒）。
+
+```sh
+ps -axo pid,command | grep "ollama runner"        # 找到 runner 的 pid
+kill -9 <runner pid>
+ollama ps                                          # 應該變成空的
+```
+
+**預防**：對 MLX 模型的長時間串流請求，呼叫端要設合理的 timeout；用 Open WebUI 時把模型的進階參數設成 `"think": false`（第十六章 16-3-2）。這台機器上目前只重現過一次，`ollama serve` 的 log 沒有錯誤訊息。
+
 ---
 
 ## 5-7 本章小結
@@ -584,5 +604,5 @@ footprint -p <runner pid>        # phys_footprint 才是 macOS 真正計帳的�
 | 多模型 | 可同時載入；衍生模型會再佔一份記憶體 |
 | 設定 | 環境變數經 `launchctl setenv` + `brew services restart`；`keep_alive` 控制常駐 |
 | 匯入 | `ollama pull hf.co/<repo>:<quant>` 最快 |
-| 限制 | MLX 不支援 `format`；Modelfile 無法關思考；CUDA 類問題不適用 |
+| 限制 | MLX 不支援 `format`；Modelfile 無法關思考；MLX runner 曾卡在 Stopping...（kill -9 runner 解決）；CUDA 類問題不適用 |
 | 待補 | Nemotron 3.5 Super 執行結果、`OLLAMA_HOST` 區網開放的實測 |
